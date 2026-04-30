@@ -125,6 +125,10 @@ def init_db():
         except: pass
         try: db.execute('ALTER TABLE users ADD COLUMN banner TEXT DEFAULT NULL')
         except: pass
+        try: db.execute('ALTER TABLE users ADD COLUMN profile_color1 TEXT DEFAULT NULL')
+        except: pass
+        try: db.execute('ALTER TABLE users ADD COLUMN profile_color2 TEXT DEFAULT NULL')
+        except: pass
         db.commit()
 
 def _dm_channel(a, b):
@@ -304,6 +308,19 @@ def delete_message():
     return jsonify({'ok': True})
 
 
+@app.route('/api/update-profile-color', methods=['POST'])
+def update_profile_color():
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    data = request.get_json()
+    color1 = (data.get('color1') or '').strip()[:7] or None
+    color2 = (data.get('color2') or '').strip()[:7] or None
+    with get_db() as db:
+        db.execute('UPDATE users SET profile_color1=?, profile_color2=? WHERE username=?',
+                   (color1, color2, caller))
+        db.commit()
+    return jsonify({'ok': True})
+
 @app.route('/api/update-banner', methods=['POST'])
 def update_banner():
     caller = session.get('username')
@@ -354,7 +371,7 @@ def me():
 def profile(username):
     caller = session.get('username')
     with get_db() as db:
-        row = db.execute('SELECT username,created,pronouns,about_me,banner FROM users WHERE username=? COLLATE NOCASE', (username,)).fetchone()
+        row = db.execute('SELECT username,created,pronouns,about_me,banner,profile_color1,profile_color2 FROM users WHERE username=? COLLATE NOCASE', (username,)).fetchone()
     if not row: return jsonify({'ok':False,'error':'User not found.'}), 404
     badges = get_badges(username)
     avatar = avatars.get(username)
@@ -372,7 +389,8 @@ def profile(username):
     return jsonify({'ok':True,'username':row['username'],'created':row['created'],
                     'badges':badges,'avatar':avatar,'friend_state':friend_state,
                     'pronouns': row['pronouns'] or '', 'about_me': row['about_me'] or '',
-                    'banner': row['banner'] or ''})
+                    'banner': row['banner'] or '',
+                    'color1': row['profile_color1'] or '', 'color2': row['profile_color2'] or ''})
 
 
 # ── Friends API ───────────────────────────────────────────
