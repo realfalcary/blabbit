@@ -519,7 +519,7 @@ def grant_badge():
     data = request.get_json()
     target   = (data.get('username') or '').strip()
     badge_id = (data.get('badge')    or '').strip()
-    if badge_id not in {'founder','early_tester','amethyst','iolite'}:
+    if badge_id not in {'founder','early_tester','amethyst','iolite','iris'}:
         return jsonify({'ok':False,'error':'Unknown badge.'}), 400
     with get_db() as db:
         if not db.execute('SELECT id FROM users WHERE username=?', (target,)).fetchone():

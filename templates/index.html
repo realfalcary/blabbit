@@ -826,6 +826,13 @@
           </span>
           <button class="badge-toggle" id="toggle-iolite-badge">Grant</button>
         </div>
+        <div class="badge-grant-row" style="margin-top:10px;">
+          <span>
+            <img src="/static/iris_badge.png" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;"/>
+            Iris Badge
+          </span>
+          <button class="badge-toggle" id="toggle-iris-badge">Grant</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1419,6 +1426,11 @@
       label: 'Iolite Badge',
       desc: 'A stunning blue gem badge granted by the founder to a valued member of Blabbit.',
       imgHtml: `<img src="/static/iolite_badge.png" style="width:28px;height:28px;object-fit:contain;display:block;"/>`
+    },
+    iris: {
+      label: 'Iris Badge',
+      desc: 'A rare violet gem badge granted by the founder to a cherished member of Blabbit.',
+      imgHtml: `<img src="/static/iris_badge.png" style="width:28px;height:28px;object-fit:contain;display:block;"/>`
     }
   };
 
@@ -1561,6 +1573,10 @@
         const hasIolite = (data.badges || []).includes('iolite');
         ioliteBtn.textContent = hasIolite ? 'Revoke' : 'Grant';
         ioliteBtn.classList.toggle('active', hasIolite);
+        const irisBtn = document.getElementById('toggle-iris-badge');
+        const hasIris = (data.badges || []).includes('iris');
+        irisBtn.textContent = hasIris ? 'Revoke' : 'Grant';
+        irisBtn.classList.toggle('active', hasIris);
       }
     } catch(e) { console.error(e); }
   };
@@ -1614,6 +1630,18 @@
     if (data.ok) window.openProfile(profileTarget);
   });
 
+  document.getElementById('toggle-iris-badge').addEventListener('click', async () => {
+    if (!profileTarget) return;
+    const btn = document.getElementById('toggle-iris-badge');
+    const granting = btn.textContent === 'Grant';
+    const res = await fetch(granting ? '/api/badge/grant' : '/api/badge/revoke', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ username: profileTarget, badge: 'iris' })
+    });
+    const data = await res.json();
+    if (data.ok) window.openProfile(profileTarget);
+  });
+
   // ── Friends & DMs ──────────────────────────────────────
   let myFriends = { accepted: [], incoming: [], outgoing: [] };
   let activeDM = null;
@@ -1655,10 +1683,6 @@
     document.getElementById('msg-input').placeholder = `Message ${friendUsername}…`;
     clearMessages();
     renderFriends(myFriends);
-    // After switching channel, history will load — scroll to bottom then
-    socket.once('history', () => {
-      setTimeout(() => scrollToBottom(false), 100);
-    });
     socket.emit('switch_channel', { channel: ch });
   }
 
@@ -1917,7 +1941,6 @@
     document.getElementById('header-channel-name').textContent = channel.name;
     document.querySelector('#channel-header .hash').textContent = '#';
     document.getElementById('msg-input').placeholder = `Message #${channel.name}…`;
-    socket.once('history', () => { setTimeout(() => scrollToBottom(false), 100); });
     socket.emit('switch_channel', { channel: ch });
   }
 
@@ -2322,12 +2345,11 @@
       pendingHistory = null;
       gotAvatarSync = false;
       gotFounderSync = false;
-      // After all images load, do a final instant scroll, then re-enable smooth
       setTimeout(() => {
         messagesEl.style.scrollBehavior = 'auto';
         messagesEl.scrollTop = messagesEl.scrollHeight;
         _isLoadingHistory = false;
-      }, 300);
+      }, 150);
     }
   }
 
