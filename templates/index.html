@@ -737,7 +737,67 @@
     }
     .ios-toggle.on::after { transform: translateX(20px); }
 
-    @keyframes update-pulse {
+    /* ─── COLOR THEMES ───────────────────────────────── */
+    body.purple-mode {
+      --bg-deep:    #0e0a18;
+      --bg-sidebar: #150e24;
+      --bg-main:    #120c20;
+      --bg-input:   #1e1430;
+      --bg-hover:   #261a3a;
+      --accent:     #9b59f5;
+      --accent-glow:#9b59f555;
+      --accent2:    #c49bf8;
+      --text:       #f0eaff;
+      --text-muted: #9a80c4;
+      --text-dim:   #4a3470;
+      --online:     #c49bf8;
+    }
+    body.blue-mode {
+      --bg-deep:    #080e1a;
+      --bg-sidebar: #0c1428;
+      --bg-main:    #0a1022;
+      --bg-input:   #101830;
+      --bg-hover:   #162038;
+      --accent:     #4a9eff;
+      --accent-glow:#4a9eff55;
+      --accent2:    #90c8ff;
+      --text:       #e8f4ff;
+      --text-muted: #7aabcc;
+      --text-dim:   #2a5070;
+      --online:     #90c8ff;
+    }
+    body.red-mode {
+      --bg-deep:    #180808;
+      --bg-sidebar: #240c0c;
+      --bg-main:    #200a0a;
+      --bg-input:   #301010;
+      --bg-hover:   #3a1414;
+      --accent:     #ff4a4a;
+      --accent-glow:#ff4a4a55;
+      --accent2:    #ff9090;
+      --text:       #fff0f0;
+      --text-muted: #cc7a7a;
+      --text-dim:   #702020;
+      --online:     #ff9090;
+    }
+    body.sunset-mode {
+      --bg-deep:    #12080e;
+      --bg-sidebar: #1e0e18;
+      --bg-main:    #180c14;
+      --bg-input:   #281420;
+      --bg-hover:   #321828;
+      --accent:     #ff6b35;
+      --accent-glow:#ff6b3555;
+      --accent2:    #ffaa80;
+      --text:       #fff5ee;
+      --text-muted: #cc8866;
+      --text-dim:   #703322;
+      --online:     #ffaa80;
+    }
+    body.purple-mode .ios-toggle.on { background: #9b59f5; }
+    body.blue-mode .ios-toggle.on { background: #4a9eff; }
+    body.red-mode .ios-toggle.on { background: #ff4a4a; }
+    body.sunset-mode .ios-toggle.on { background: #ff6b35; }
       0%,100% { box-shadow: 0 0 10px #3ddc9755; }
       50%      { box-shadow: 0 0 22px #3ddc97cc; }
     }
@@ -797,7 +857,9 @@
     <div id="profile-online-dot" style="display:none"></div>
     <div id="profile-body">
       <div id="profile-username">—</div>
+      <div id="profile-pronouns" style="font-size:13px;color:var(--text-muted);margin-bottom:2px;display:none;"></div>
       <div id="profile-joined"></div>
+      <div id="profile-aboutme" style="font-size:13px;color:var(--text-muted);line-height:1.5;margin-bottom:12px;display:none;"></div>
       <div id="profile-friend-action" style="margin-bottom:12px;"></div>
       <div class="profile-divider"></div>
       <div class="profile-section-label">Badges</div>
@@ -927,10 +989,48 @@
       <div class="settings-msg" id="settings-pfp-msg"></div>
     </div>
 
+    <!-- Pronouns -->
+    <div class="settings-row">
+      <div class="settings-row-label">Pronouns</div>
+      <div class="settings-row-inner">
+        <input class="settings-field" id="settings-pronouns-input" type="text" maxlength="30" placeholder="e.g. she/her, they/them" autocomplete="off"/>
+        <button class="settings-confirm-btn" id="settings-pronouns-save" title="Save pronouns">✓</button>
+      </div>
+      <div class="settings-msg" id="settings-pronouns-msg"></div>
+    </div>
+
+    <!-- About Me -->
+    <div class="settings-row">
+      <div class="settings-row-label">About Me</div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <textarea class="settings-field" id="settings-aboutme-input" maxlength="200" placeholder="Tell people a little about yourself…" rows="3" style="resize:none;"></textarea>
+        <button class="settings-confirm-btn" id="settings-aboutme-save" title="Save about me">✓</button>
+      </div>
+      <div class="settings-msg" id="settings-aboutme-msg"></div>
+    </div>
+
     <!-- Light/dark toggle -->
     <div class="toggle-row">
       <span class="toggle-label">Light mode</span>
       <button class="ios-toggle" id="theme-toggle"></button>
+    </div>
+
+    <!-- Color themes -->
+    <div class="toggle-row">
+      <span class="toggle-label">💜 Purple mode</span>
+      <button class="ios-toggle" id="purple-toggle"></button>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">💙 Blue mode</span>
+      <button class="ios-toggle" id="blue-toggle"></button>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">❤️ Red mode</span>
+      <button class="ios-toggle" id="red-toggle"></button>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">🌅 Sunset mode</span>
+      <button class="ios-toggle" id="sunset-toggle"></button>
     </div>
 
     <!-- Sign out -->
@@ -1275,6 +1375,10 @@
     pendingPfp = null;
     document.getElementById('settings-username-input').value = myUsername;
     document.getElementById('settings-username-msg').textContent = '';
+    document.getElementById('settings-pronouns-input').value = localStorage.getItem('blabbit_pronouns_' + myUsername) || '';
+    document.getElementById('settings-pronouns-msg').textContent = '';
+    document.getElementById('settings-aboutme-input').value = localStorage.getItem('blabbit_aboutme_' + myUsername) || '';
+    document.getElementById('settings-aboutme-msg').textContent = '';
     document.getElementById('settings-pfp-msg').textContent = '';
     document.getElementById('settings-pfp-file').value = '';
     renderAvatarEl(document.getElementById('settings-pfp-preview'), myUsername, avatarCache[myUsername] || null);
@@ -1356,6 +1460,52 @@
     await fetch('/api/logout', { method: 'POST' });
     localStorage.removeItem('blabbit_username');
     location.reload();
+  });
+
+  // Pronouns save
+  document.getElementById('settings-pronouns-save').addEventListener('click', () => {
+    const val = document.getElementById('settings-pronouns-input').value.trim();
+    const msgEl = document.getElementById('settings-pronouns-msg');
+    localStorage.setItem('blabbit_pronouns_' + myUsername, val);
+    msgEl.textContent = 'Saved!'; msgEl.className = 'settings-msg';
+    setTimeout(() => msgEl.textContent = '', 2000);
+  });
+  document.getElementById('settings-pronouns-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('settings-pronouns-save').click();
+  });
+
+  // About me save
+  document.getElementById('settings-aboutme-save').addEventListener('click', () => {
+    const val = document.getElementById('settings-aboutme-input').value.trim();
+    const msgEl = document.getElementById('settings-aboutme-msg');
+    localStorage.setItem('blabbit_aboutme_' + myUsername, val);
+    msgEl.textContent = 'Saved!'; msgEl.className = 'settings-msg';
+    setTimeout(() => msgEl.textContent = '', 2000);
+  });
+
+  // ── Color themes ──────────────────────────────────────
+  const colorThemes = ['purple', 'blue', 'red', 'sunset'];
+
+  function applyTheme(theme) {
+    colorThemes.forEach(t => document.body.classList.remove(t + '-mode'));
+    if (theme) document.body.classList.add(theme + '-mode');
+    colorThemes.forEach(t => {
+      const btn = document.getElementById(t + '-toggle');
+      if (btn) btn.classList.toggle('on', t === theme);
+    });
+    if (theme) localStorage.setItem('blabbit_color_theme', theme);
+    else localStorage.removeItem('blabbit_color_theme');
+  }
+
+  // Load saved color theme
+  const savedColorTheme = localStorage.getItem('blabbit_color_theme');
+  if (savedColorTheme) applyTheme(savedColorTheme);
+
+  colorThemes.forEach(t => {
+    document.getElementById(t + '-toggle').addEventListener('click', () => {
+      const isOn = document.body.classList.contains(t + '-mode');
+      applyTheme(isOn ? null : t);
+    });
   });
 
   // ── Version label ─────────────────────────────────────
@@ -1491,6 +1641,26 @@
       if (!data.ok) return;
 
       document.getElementById('profile-username').textContent = data.username;
+
+      // Pronouns
+      const pronounsEl = document.getElementById('profile-pronouns');
+      const pronouns = localStorage.getItem('blabbit_pronouns_' + data.username) || '';
+      if (pronouns) {
+        pronounsEl.textContent = `(${pronouns})`;
+        pronounsEl.style.display = 'block';
+      } else {
+        pronounsEl.style.display = 'none';
+      }
+
+      // About me
+      const aboutEl = document.getElementById('profile-aboutme');
+      const aboutMe = localStorage.getItem('blabbit_aboutme_' + data.username) || '';
+      if (aboutMe) {
+        aboutEl.textContent = aboutMe;
+        aboutEl.style.display = 'block';
+      } else {
+        aboutEl.style.display = 'none';
+      }
 
       // Format joined date
       let joinedStr = data.created || '';
