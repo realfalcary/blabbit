@@ -859,8 +859,15 @@
       <div id="profile-username">—</div>
       <div id="profile-pronouns" style="font-size:13px;color:var(--text-muted);margin-bottom:2px;display:none;"></div>
       <div id="profile-joined"></div>
-      <div id="profile-aboutme" style="font-size:13px;color:var(--text-muted);line-height:1.5;margin-bottom:12px;display:none;"></div>
       <div id="profile-friend-action" style="margin-bottom:12px;"></div>
+      <div id="profile-aboutme-section" style="display:none;margin-bottom:12px;">
+        <div class="profile-section-label">About Me</div>
+        <div id="profile-aboutme" style="
+          background:var(--bg-hover);border-radius:10px;padding:10px 14px;
+          font-size:13px;color:var(--text-muted);line-height:1.6;
+          border:1px solid #ffffff08;
+        "></div>
+      </div>
       <div class="profile-divider"></div>
       <div class="profile-section-label">Badges</div>
       <div id="profile-badges"></div>
@@ -1100,7 +1107,7 @@
             padding:7px 10px;color:var(--text);font-family:var(--font-ui);font-size:13px;outline:none;"
             onkeydown="if(event.key==='Enter') searchUser()"/>
           <button onclick="searchUser()" style="
-            background:linear-gradient(135deg,#f0649c,#c83070);border:none;border-radius:8px;
+            background:var(--accent);border:none;border-radius:8px;
             padding:7px 10px;color:#fff;font-family:var(--font-ui);font-size:12px;
             font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;
           ">Search</button>
@@ -1370,18 +1377,25 @@
   const settingsPage = document.getElementById('settings-page');
   let pendingPfp = null;
 
-  function openSettingsPage() {
+  async function openSettingsPage() {
     if (!myUsername) return;
     pendingPfp = null;
     document.getElementById('settings-username-input').value = myUsername;
     document.getElementById('settings-username-msg').textContent = '';
-    document.getElementById('settings-pronouns-input').value = localStorage.getItem('blabbit_pronouns_' + myUsername) || '';
     document.getElementById('settings-pronouns-msg').textContent = '';
-    document.getElementById('settings-aboutme-input').value = localStorage.getItem('blabbit_aboutme_' + myUsername) || '';
     document.getElementById('settings-aboutme-msg').textContent = '';
     document.getElementById('settings-pfp-msg').textContent = '';
     document.getElementById('settings-pfp-file').value = '';
     renderAvatarEl(document.getElementById('settings-pfp-preview'), myUsername, avatarCache[myUsername] || null);
+    // Load pronouns and about me from API
+    try {
+      const res = await fetch('/api/profile/' + encodeURIComponent(myUsername));
+      const data = await res.json();
+      if (data.ok) {
+        document.getElementById('settings-pronouns-input').value = data.pronouns || '';
+        document.getElementById('settings-aboutme-input').value = data.about_me || '';
+      }
+    } catch(e) {}
     settingsPage.classList.add('open');
   }
 
@@ -1463,24 +1477,40 @@
   });
 
   // Pronouns save
-  document.getElementById('settings-pronouns-save').addEventListener('click', () => {
+  document.getElementById('settings-pronouns-save').addEventListener('click', async () => {
     const val = document.getElementById('settings-pronouns-input').value.trim();
     const msgEl = document.getElementById('settings-pronouns-msg');
-    localStorage.setItem('blabbit_pronouns_' + myUsername, val);
-    msgEl.textContent = 'Saved!'; msgEl.className = 'settings-msg';
-    setTimeout(() => msgEl.textContent = '', 2000);
+    const res = await fetch('/api/update-pronouns', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ pronouns: val })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      msgEl.textContent = 'Saved!'; msgEl.className = 'settings-msg';
+      setTimeout(() => msgEl.textContent = '', 2000);
+    } else {
+      msgEl.textContent = 'Failed.'; msgEl.className = 'settings-msg err';
+    }
   });
   document.getElementById('settings-pronouns-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('settings-pronouns-save').click();
   });
 
   // About me save
-  document.getElementById('settings-aboutme-save').addEventListener('click', () => {
+  document.getElementById('settings-aboutme-save').addEventListener('click', async () => {
     const val = document.getElementById('settings-aboutme-input').value.trim();
     const msgEl = document.getElementById('settings-aboutme-msg');
-    localStorage.setItem('blabbit_aboutme_' + myUsername, val);
-    msgEl.textContent = 'Saved!'; msgEl.className = 'settings-msg';
-    setTimeout(() => msgEl.textContent = '', 2000);
+    const res = await fetch('/api/update-aboutme', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ about_me: val })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      msgEl.textContent = 'Saved!'; msgEl.className = 'settings-msg';
+      setTimeout(() => msgEl.textContent = '', 2000);
+    } else {
+      msgEl.textContent = 'Failed.'; msgEl.className = 'settings-msg err';
+    }
   });
 
   // ── Theme toggle ──────────────────────────────────────
@@ -1626,24 +1656,23 @@
 
       document.getElementById('profile-username').textContent = data.username;
 
-      // Pronouns
+      // Pronouns from API
       const pronounsEl = document.getElementById('profile-pronouns');
-      const pronouns = localStorage.getItem('blabbit_pronouns_' + data.username) || '';
-      if (pronouns) {
-        pronounsEl.textContent = `(${pronouns})`;
+      if (data.pronouns) {
+        pronounsEl.textContent = `(${data.pronouns})`;
         pronounsEl.style.display = 'block';
       } else {
         pronounsEl.style.display = 'none';
       }
 
-      // About me
+      // About me from API
+      const aboutSection = document.getElementById('profile-aboutme-section');
       const aboutEl = document.getElementById('profile-aboutme');
-      const aboutMe = localStorage.getItem('blabbit_aboutme_' + data.username) || '';
-      if (aboutMe) {
-        aboutEl.textContent = aboutMe;
-        aboutEl.style.display = 'block';
+      if (data.about_me) {
+        aboutEl.textContent = data.about_me;
+        aboutSection.style.display = 'block';
       } else {
-        aboutEl.style.display = 'none';
+        aboutSection.style.display = 'none';
       }
 
       // Format joined date

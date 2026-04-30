@@ -10,9 +10,15 @@ import sys
 app = Flask(__name__)
 
 def get_data_dir():
-    # Railway provides /data as persistent storage, fallback to local
-    if os.path.exists('/data'):
+    # Check for explicit env var first (set this in Railway to /data)
+    env_dir = os.environ.get('BLABBIT_DATA_DIR')
+    if env_dir:
+        os.makedirs(env_dir, exist_ok=True)
+        return env_dir
+    # Railway persistent volume
+    if os.path.ismount('/data'):
         return '/data'
+    # Fallback
     if getattr(sys, 'frozen', False):
         data_dir = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'Blabbit')
     else:
@@ -112,6 +118,10 @@ def init_db():
             UNIQUE(server_id, username)
         )''')
         try: db.execute('ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT NULL')
+        except: pass
+        try: db.execute('ALTER TABLE users ADD COLUMN pronouns TEXT DEFAULT NULL')
+        except: pass
+        try: db.execute('ALTER TABLE users ADD COLUMN about_me TEXT DEFAULT NULL')
         except: pass
         db.commit()
 
@@ -292,6 +302,28 @@ def delete_message():
     return jsonify({'ok': True})
 
 
+@app.route('/api/update-pronouns', methods=['POST'])
+def update_pronouns():
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    data = request.get_json()
+    pronouns = (data.get('pronouns') or '').strip()[:30]
+    with get_db() as db:
+        db.execute('UPDATE users SET pronouns=? WHERE username=?', (pronouns or None, caller))
+        db.commit()
+    return jsonify({'ok': True})
+
+@app.route('/api/update-aboutme', methods=['POST'])
+def update_aboutme():
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    data = request.get_json()
+    about_me = (data.get('about_me') or '').strip()[:200]
+    with get_db() as db:
+        db.execute('UPDATE users SET about_me=? WHERE username=?', (about_me or None, caller))
+        db.commit()
+    return jsonify({'ok': True})
+
 @app.route('/api/logout', methods=['POST'])
 def logout():
     session.pop('username', None)
@@ -309,7 +341,7 @@ def me():
 def profile(username):
     caller = session.get('username')
     with get_db() as db:
-        row = db.execute('SELECT username,created FROM users WHERE username=? COLLATE NOCASE', (username,)).fetchone()
+        row = db.execute('SELECT username,created,pronouns,about_me FROM users WHERE username=? COLLATE NOCASE', (username,)).fetchone()
     if not row: return jsonify({'ok':False,'error':'User not found.'}), 404
     badges = get_badges(username)
     avatar = avatars.get(username)
@@ -325,7 +357,8 @@ def profile(username):
         else:
             friend_state = 'incoming'
     return jsonify({'ok':True,'username':row['username'],'created':row['created'],
-                    'badges':badges,'avatar':avatar,'friend_state':friend_state})
+                    'badges':badges,'avatar':avatar,'friend_state':friend_state,
+                    'pronouns': row['pronouns'] or '', 'about_me': row['about_me'] or ''})
 
 
 # ── Friends API ───────────────────────────────────────────
