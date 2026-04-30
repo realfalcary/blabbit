@@ -1043,41 +1043,6 @@
       <div class="settings-msg" id="settings-pfp-msg"></div>
     </div>
 
-    <!-- Profile Color -->
-    <div class="settings-row">
-      <div class="settings-row-label">Profile Color</div>
-      <div style="display:flex;gap:12px;align-items:center;">
-        <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
-          <input type="color" id="settings-color1" value="#3a1828" style="
-            width:44px;height:44px;border-radius:10px;border:1px solid #f0649c25;
-            background:none;cursor:pointer;padding:2px;
-          "/>
-          <span style="font-size:10px;color:var(--text-dim);">Top</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
-          <input type="color" id="settings-color2" value="#200e1e" style="
-            width:44px;height:44px;border-radius:10px;border:1px solid #f0649c25;
-            background:none;cursor:pointer;padding:2px;
-          "/>
-          <span style="font-size:10px;color:var(--text-dim);">Bottom</span>
-        </div>
-        <!-- Live preview -->
-        <div id="settings-color-preview" style="
-          flex:1;height:60px;border-radius:10px;
-          background:linear-gradient(135deg,#3a1828,#200e1e);
-          border:1px solid #f0649c15;transition:background .2s;
-        "></div>
-        <button class="settings-confirm-btn" id="settings-color-save" title="Save colors">✓</button>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <button id="settings-color-reset" style="
-          background:none;border:none;color:var(--text-dim);font-size:12px;
-          cursor:pointer;font-family:var(--font-ui);
-        ">Reset to default</button>
-      </div>
-      <div class="settings-msg" id="settings-color-msg"></div>
-    </div>
-
     <!-- Banner -->
     <div class="settings-row">
       <div class="settings-row-label">Profile Banner</div>
@@ -1504,12 +1469,6 @@
       if (data.ok) {
         document.getElementById('settings-pronouns-input').value = data.pronouns || '';
         document.getElementById('settings-aboutme-input').value = data.about_me || '';
-        const c1 = data.color1 || '#3a1828';
-        const c2 = data.color2 || '#200e1e';
-        document.getElementById('settings-color1').value = c1;
-        document.getElementById('settings-color2').value = c2;
-        document.getElementById('settings-color-preview').style.background =
-          `linear-gradient(135deg,${c1},${c2})`;
         const bannerPrev = document.getElementById('settings-banner-preview');
         if (data.banner) {
           bannerPrev.style.backgroundImage = `url(${data.banner})`;
@@ -1817,8 +1776,7 @@
     // Banner - reset first
     const bannerEl = document.getElementById('profile-banner');
     bannerEl.classList.remove('has-bg', 'has-image');
-    bannerEl.style.backgroundImage = '';
-    bannerEl.style.background = 'linear-gradient(135deg, #3a1828, #200e1e, #2a1228)';
+    bannerEl.removeAttribute('style');
 
     // Online dot
     const isOnline = onlineUsers.includes(username);
@@ -1829,21 +1787,13 @@
       const data = await res.json();
       if (!data.ok) return;
 
-      // Banner + colors
+      // Banner
+      bannerEl.classList.remove('has-bg');
+      bannerEl.removeAttribute('style');
       if (data.banner) {
         bannerEl.classList.add('has-bg');
-        bannerEl.style.backgroundImage = `url("${data.banner}")`;
-        bannerEl.style.background = '';
-      } else if (data.color1 || data.color2) {
-        bannerEl.classList.add('has-bg');
-        const c1 = data.color1 || '#3a1828';
-        const c2 = data.color2 || '#200e1e';
-        bannerEl.style.backgroundImage = '';
-        bannerEl.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
-      } else {
-        bannerEl.classList.remove('has-bg');
-        bannerEl.style.backgroundImage = '';
-        bannerEl.style.background = 'linear-gradient(135deg, #3a1828, #200e1e, #2a1228)';
+        bannerEl.setAttribute('style',
+          `background-image: url("${data.banner}"); background-size: cover; background-position: center;`);
       }
 
       document.getElementById('profile-username').textContent = data.username;
@@ -3044,46 +2994,6 @@
 
   makeAnimBg('login-bg-canvas', getThemeColor);
   makeAnimBg('settings-bg-canvas', getThemeColor);
-
-  // ── Profile colors ────────────────────────────────────
-  function updateColorPreview() {
-    const c1 = document.getElementById('settings-color1').value;
-    const c2 = document.getElementById('settings-color2').value;
-    document.getElementById('settings-color-preview').style.background =
-      `linear-gradient(135deg,${c1},${c2})`;
-  }
-  document.getElementById('settings-color1').addEventListener('input', updateColorPreview);
-  document.getElementById('settings-color2').addEventListener('input', updateColorPreview);
-
-  document.getElementById('settings-color-save').addEventListener('click', async () => {
-    const msgEl = document.getElementById('settings-color-msg');
-    const color1 = document.getElementById('settings-color1').value;
-    const color2 = document.getElementById('settings-color2').value;
-    const res = await fetch('/api/update-profile-color', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ color1, color2 })
-    });
-    const data = await res.json();
-    if (data.ok) {
-      msgEl.textContent = 'Colors saved!'; msgEl.className = 'settings-msg';
-      setTimeout(() => msgEl.textContent = '', 2500);
-    } else {
-      msgEl.textContent = 'Failed.'; msgEl.className = 'settings-msg err';
-    }
-  });
-
-  document.getElementById('settings-color-reset').addEventListener('click', async () => {
-    document.getElementById('settings-color1').value = '#3a1828';
-    document.getElementById('settings-color2').value = '#200e1e';
-    updateColorPreview();
-    await fetch('/api/update-profile-color', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ color1: '', color2: '' })
-    });
-    const msgEl = document.getElementById('settings-color-msg');
-    msgEl.textContent = 'Reset!'; msgEl.className = 'settings-msg';
-    setTimeout(() => msgEl.textContent = '', 1500);
-  });
 
   // ── Banner (settings) ─────────────────────────────────
   let pendingBanner = null;
