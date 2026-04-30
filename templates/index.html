@@ -386,14 +386,18 @@
       height: 120px; border-radius: 20px 20px 0 0; overflow: hidden;
       background: linear-gradient(135deg, #3a1828 0%, #200e1e 40%, #2a1228 100%);
       position: relative;
+      background-size: cover;
+      background-position: center;
     }
     #profile-banner::before {
       content: ''; position: absolute; inset: 0;
       background: repeating-linear-gradient(135deg, #f0649c0a 0px, #f0649c0a 1px, transparent 1px, transparent 20px);
+      pointer-events: none;
     }
     #profile-banner::after {
       content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40px;
       background: linear-gradient(to bottom, transparent, #1e1220);
+      pointer-events: none;
     }
 
     /* Avatar ring */
@@ -1734,10 +1738,12 @@
     const avWrap = document.getElementById('profile-avatar-wrap');
     renderAvatarEl(avWrap, username, avatarCache[username] || null);
 
-    // Banner
+    // Banner - reset first
     const bannerEl = document.getElementById('profile-banner');
     bannerEl.style.backgroundImage = '';
     bannerEl.style.backgroundSize = '';
+    bannerEl.style.backgroundPosition = '';
+    bannerEl.style.background = '';
 
     // Online dot
     const isOnline = onlineUsers.includes(username);
@@ -1749,7 +1755,6 @@
       if (!data.ok) return;
 
       // Banner + colors
-      const bannerEl = document.getElementById('profile-banner');
       if (data.banner) {
         bannerEl.style.backgroundImage = `url(${data.banner})`;
         bannerEl.style.backgroundSize = 'cover';
