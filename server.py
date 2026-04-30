@@ -57,11 +57,6 @@ FOUNDER_USERNAME = 'cora'
 def make_session_permanent():
     session.permanent = True
 
-# Initialize DB on startup
-with app.app_context():
-    init_db()
-    avatars.update(load_all_avatars())
-
 online_users = {}   # sid -> {username, channel}
 avatars = {}        # username -> dataURL
 
@@ -667,3 +662,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     print(f"Blabbit running at http://localhost:{port}")
     socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)
+else:
+    # Running under gunicorn on Railway
+    init_db()
+    avatars.update(load_all_avatars())
