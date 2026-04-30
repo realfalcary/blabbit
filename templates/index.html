@@ -1483,13 +1483,23 @@
     setTimeout(() => msgEl.textContent = '', 2000);
   });
 
+  // ── Theme toggle ──────────────────────────────────────
+  const themeToggle = document.getElementById('theme-toggle');
+  const savedTheme  = localStorage.getItem('blabbit_theme');
+  if (savedTheme === 'light') { document.body.classList.add('light-mode'); themeToggle.classList.add('on'); }
+
+  themeToggle.addEventListener('click', () => {
+    const isLight = document.body.classList.toggle('light-mode');
+    themeToggle.classList.toggle('on', isLight);
+    localStorage.setItem('blabbit_theme', isLight ? 'light' : 'dark');
+    if (isLight) applyTheme(null);
+  });
+
   // ── Color themes ──────────────────────────────────────
   const colorThemes = ['purple', 'blue', 'red', 'sunset'];
 
   function applyTheme(theme) {
-    // Remove all color themes
     colorThemes.forEach(t => document.body.classList.remove(t + '-mode'));
-    // If picking a color theme, turn off light mode
     if (theme) {
       document.body.classList.remove('light-mode');
       themeToggle.classList.remove('on');
@@ -1505,7 +1515,6 @@
     });
   }
 
-  // Load saved color theme
   const savedColorTheme = localStorage.getItem('blabbit_color_theme');
   if (savedColorTheme) applyTheme(savedColorTheme);
 
@@ -1514,40 +1523,6 @@
       const isOn = document.body.classList.contains(t + '-mode');
       applyTheme(isOn ? null : t);
     });
-  });
-
-  // ── Version label ─────────────────────────────────────
-  if (window.blabbitApp) {
-    window.blabbitApp.getVersion().then(v => {
-      document.getElementById('version-label').textContent = 'v' + v;
-    });
-  }
-
-  // ── Auto-update (Electron only) ────────────────────────
-  if (window.blabbitApp) {
-    window.blabbitApp.onUpdateAvailable(version => {
-      const btn = document.getElementById('update-btn');
-      btn.style.display = 'flex';
-      btn.title = `Update to v${version} — click to install`;
-    });
-  }
-
-  window.installUpdate = function() {
-    if (window.blabbitApp) {
-      window.blabbitApp.installUpdate();
-    }
-  };
-
-  // ── Theme toggle ──────────────────────────────────────
-  const themeToggle = document.getElementById('theme-toggle');
-  const savedTheme  = localStorage.getItem('blabbit_theme');
-  if (savedTheme === 'light') { document.body.classList.add('light-mode'); themeToggle.classList.add('on'); }
-
-  themeToggle.addEventListener('click', () => {
-    const isLight = document.body.classList.toggle('light-mode');
-    themeToggle.classList.toggle('on', isLight);
-    localStorage.setItem('blabbit_theme', isLight ? 'light' : 'dark');
-    if (isLight) applyTheme(null); // turn off color themes
   });
 
   // Receive avatar from other users
