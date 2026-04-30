@@ -367,6 +367,22 @@ def me():
 
 
 # ── Profile ───────────────────────────────────────────────
+@app.route('/api/mutual-friends/<username>', methods=['GET'])
+def get_mutual_friends(username):
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    with get_db() as db:
+        def get_friends(u):
+            rows = db.execute(
+                "SELECT CASE WHEN user_a=? THEN user_b ELSE user_a END AS friend FROM friends WHERE (user_a=? OR user_b=?) AND status='accepted'",
+                (u, u, u)
+            ).fetchall()
+            return {r['friend'] for r in rows}
+        caller_friends = get_friends(caller)
+        target_friends = get_friends(username)
+        mutuals = sorted(caller_friends & target_friends)
+    return jsonify({'ok': True, 'mutuals': mutuals})
+
 @app.route('/api/profile/<username>')
 def profile(username):
     caller = session.get('username')

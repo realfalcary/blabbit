@@ -133,33 +133,33 @@
     #messages::-webkit-scrollbar { width: 6px; }
     #messages::-webkit-scrollbar-thumb { background: #ffffff15; border-radius: 3px; }
 
-    .msg-group { margin-bottom: 18px; display: flex; gap: 16px; align-items: flex-start; }
+    .msg-group { margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start; }
     .msg-avatar {
-      width: 72px; height: 72px; border-radius: 50%; flex-shrink: 0;
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 26px; font-weight: 700; color: #fff; overflow: hidden; margin-top: 2px;
+      font-size: 14px; font-weight: 700; color: #fff; overflow: hidden; margin-top: 2px;
     }
     .msg-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
     .msg-avatar.founder-ring {
-      box-shadow: 0 0 0 3px #f0649c, 0 0 10px 4px #f0649c88, 0 0 22px 6px #f0649c33;
+      box-shadow: 0 0 0 2px #f0649c, 0 0 8px 3px #f0649c88, 0 0 16px 4px #f0649c33;
     }
 
     /* Wrapper for avatar + ears overlay */
     .msg-avatar-wrap {
-      position: relative; flex-shrink: 0; width: 72px; margin-top: 10px;
+      position: relative; flex-shrink: 0; width: 36px; margin-top: 6px;
     }
     .msg-avatar-wrap .msg-avatar { margin-top: 0; position: relative; z-index: 2; }
     .bunny-ears {
-      position: absolute; top: -22px; left: 0;
-      width: 72px; height: 34px;
+      position: absolute; top: -11px; left: 0;
+      width: 36px; height: 17px;
       pointer-events: none; z-index: 1;
     }
     .msg-body { flex: 1; min-width: 0; }
-    .msg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-    .msg-username { font-weight: 700; font-size: 18px; color: var(--accent2); cursor: pointer; }
+    .msg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+    .msg-username { font-weight: 700; font-size: 14px; color: var(--accent2); cursor: pointer; }
     .msg-username:hover { text-decoration: underline; }
-    .msg-time { font-size: 12px; color: var(--text-dim); font-family: var(--font-mono); margin-left: 2px; }
-    .msg-text { font-size: 18px; line-height: 1.6; color: var(--text); padding: 2px 0; word-break: break-word; }
+    .msg-time { font-size: 10px; color: var(--text-dim); font-family: var(--font-mono); margin-left: 2px; }
+    .msg-text { font-size: 14px; line-height: 1.5; color: var(--text); padding: 1px 0; word-break: break-word; }
     .msg-embed {
       margin-top: 6px; max-width: 360px; border-radius: 10px; overflow: hidden;
       display: block; cursor: pointer;
@@ -662,11 +662,21 @@
       background: linear-gradient(90deg, transparent, var(--accent), transparent);
     }
     #settings-page-back {
-      position: absolute; top: 14px; left: 16px;
-      background: none; border: none; color: var(--text-muted);
-      font-size: 22px; cursor: pointer; transition: color .15s; line-height: 1;
+      position: fixed; top: 20px; left: 20px; z-index: 10001;
+      background: var(--bg-hover); border: 1px solid #f0649c25; border-radius: 10px;
+      color: var(--text-muted); padding: 8px 14px;
+      font-size: 15px; cursor: pointer; transition: color .15s, background .15s;
+      font-family: var(--font-ui); font-weight: 600; display: none;
     }
-    #settings-page-back:hover { color: var(--text); }
+    #settings-page.open #settings-page-back { display: block; }
+    #settings-page-back:hover { color: var(--text); background: var(--bg-input); }
+    #chat-view.dm-bg-on canvas#dm-bg-canvas {
+      display: block;
+    }
+    #dm-bg-canvas {
+      display: none; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    }
+    #chat-view { position: relative; }
     #settings-page-box h2 {
       font-family: var(--font-display); font-size: 22px; font-weight: 900;
       margin-bottom: 28px; text-align: center;
@@ -893,6 +903,18 @@
       <div class="profile-divider"></div>
       <div class="profile-section-label">Badges</div>
       <div id="profile-badges"></div>
+      <!-- Mutual friends -->
+      <div id="profile-mutuals-section" style="display:none;margin-top:12px;">
+        <div class="profile-divider"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div class="profile-section-label" style="margin:0;">Mutual Friends</div>
+          <button id="profile-mutuals-toggle" onclick="toggleMutuals()" style="
+            background:none;border:none;color:var(--accent);font-size:12px;
+            cursor:pointer;font-family:var(--font-ui);font-weight:600;
+          ">Show</button>
+        </div>
+        <div id="profile-mutuals-list" style="display:none;display:flex;flex-wrap:wrap;gap:8px;"></div>
+      </div>
       <div id="profile-founder-controls">
         <div class="profile-divider"></div>
         <div class="profile-section-label">Manage Badges</div>
@@ -1108,20 +1130,32 @@
 
     <!-- Color themes -->
     <div class="toggle-row">
-      <span class="toggle-label">💜 Purple mode</span>
+      <span class="toggle-label">Purple mode</span>
       <button class="ios-toggle" id="purple-toggle"></button>
     </div>
     <div class="toggle-row">
-      <span class="toggle-label">💙 Blue mode</span>
+      <span class="toggle-label">Blue mode</span>
       <button class="ios-toggle" id="blue-toggle"></button>
     </div>
     <div class="toggle-row">
-      <span class="toggle-label">❤️ Red mode</span>
+      <span class="toggle-label">Red mode</span>
       <button class="ios-toggle" id="red-toggle"></button>
     </div>
     <div class="toggle-row">
-      <span class="toggle-label">🌅 Sunset mode</span>
+      <span class="toggle-label">Sunset mode</span>
       <button class="ios-toggle" id="sunset-toggle"></button>
+    </div>
+
+    <!-- DM animated background -->
+    <div class="toggle-row">
+      <span class="toggle-label">Animated DM background</span>
+      <button class="ios-toggle" id="dm-bg-toggle"></button>
+    </div>
+
+    <!-- Notification sound -->
+    <div class="toggle-row">
+      <span class="toggle-label">Notification sound</span>
+      <button class="ios-toggle" id="notif-sound-toggle"></button>
     </div>
 
     <!-- Sign out -->
@@ -1139,7 +1173,7 @@
       width:52px;height:52px;border-radius:50%;background:var(--accent);border:none;
       display:flex;align-items:center;justify-content:center;cursor:pointer;
       flex-shrink:0;transition:border-radius .2s,box-shadow .2s;
-      box-shadow:0 0 10px var(--accent-glow);overflow:hidden;padding:8px;
+      box-shadow:0 0 10px var(--accent-glow);overflow:hidden;padding:4px;
     "><img src="/static/favicon.png" style="width:100%;height:100%;object-fit:contain;filter:brightness(10);"/></button>
 
     <div style="width:100%;height:1px;background:#f0649c18;margin:4px 0;flex-shrink:0;"></div>
@@ -1275,6 +1309,7 @@
 
     <!-- CHAT VIEW -->
     <div id="chat-view" style="display:none;flex-direction:column;flex:1;min-width:0;">
+      <canvas id="dm-bg-canvas"></canvas>
       <div id="channel-header">
         <span class="hash">#</span>
         <span id="header-channel-name">general</span>
@@ -1488,6 +1523,51 @@
 
   document.getElementById('settings-btn').addEventListener('click', openSettingsPage);
   document.getElementById('settings-page-back').addEventListener('click', () => settingsPage.classList.remove('open'));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && settingsPage.classList.contains('open')) {
+      settingsPage.classList.remove('open');
+    }
+  });
+
+  // ── Notification sound ────────────────────────────────
+  let notifSoundEnabled = localStorage.getItem('blabbit-notif-sound') !== 'off';
+  const notifSoundToggle = document.getElementById('notif-sound-toggle');
+  if (notifSoundEnabled) notifSoundToggle.classList.add('on');
+  notifSoundToggle.addEventListener('click', () => {
+    notifSoundEnabled = !notifSoundEnabled;
+    notifSoundToggle.classList.toggle('on', notifSoundEnabled);
+    localStorage.setItem('blabbit-notif-sound', notifSoundEnabled ? 'on' : 'off');
+  });
+
+  function playNotifSound() {
+    if (!notifSoundEnabled) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(880, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.12);
+      g.gain.setValueAtTime(0.18, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+      o.start(ctx.currentTime);
+      o.stop(ctx.currentTime + 0.25);
+    } catch(e) {}
+  }
+
+  // ── DM animated background toggle ─────────────────────
+  let dmBgEnabled = localStorage.getItem('blabbit-dm-bg') === 'on';
+  const dmBgToggle = document.getElementById('dm-bg-toggle');
+  if (dmBgEnabled) dmBgToggle.classList.add('on');
+  dmBgToggle.addEventListener('click', () => {
+    dmBgEnabled = !dmBgEnabled;
+    dmBgToggle.classList.toggle('on', dmBgEnabled);
+    localStorage.setItem('blabbit-dm-bg', dmBgEnabled ? 'on' : 'off');
+    document.getElementById('chat-view').classList.toggle('dm-bg-on', dmBgEnabled);
+  });
+  // Apply on load
+  if (dmBgEnabled) document.getElementById('chat-view').classList.add('dm-bg-on');
 
   // Username save
   document.getElementById('settings-username-save').addEventListener('click', async () => {
@@ -1850,6 +1930,29 @@
         });
       }
 
+      // Mutual friends (only show for other users)
+      const mutualsSection = document.getElementById('profile-mutuals-section');
+      const mutualsList = document.getElementById('profile-mutuals-list');
+      const mutualsToggle = document.getElementById('profile-mutuals-toggle');
+      mutualsList.style.display = 'none';
+      mutualsList.innerHTML = '';
+      mutualsToggle.textContent = 'Show';
+      if (username !== myUsername) {
+        mutualsSection.style.display = 'block';
+        // Pre-fetch mutual count
+        fetch('/api/mutual-friends/' + encodeURIComponent(username))
+          .then(r => r.json()).then(d => {
+            if (d.ok && d.mutuals.length > 0) {
+              mutualsToggle.textContent = `Show (${d.mutuals.length})`;
+              mutualsList.dataset.mutuals = JSON.stringify(d.mutuals);
+            } else {
+              mutualsSection.style.display = 'none';
+            }
+          }).catch(() => { mutualsSection.style.display = 'none'; });
+      } else {
+        mutualsSection.style.display = 'none';
+      }
+
       // Founder controls
       if (myUsername === FOUNDER_NAME && username !== myUsername) {
         const ctrl = document.getElementById('profile-founder-controls');
@@ -1873,6 +1976,33 @@
       }
     } catch(e) { console.error(e); }
   };
+
+  function toggleMutuals() {
+    const list = document.getElementById('profile-mutuals-list');
+    const btn = document.getElementById('profile-mutuals-toggle');
+    const isHidden = list.style.display === 'none' || !list.style.display;
+    if (isHidden) {
+      list.style.display = 'flex';
+      btn.textContent = 'Hide';
+      const mutuals = JSON.parse(list.dataset.mutuals || '[]');
+      list.innerHTML = mutuals.map(u => `
+        <div onclick="openProfile('${escHtml(u)}')" style="
+          display:flex;align-items:center;gap:6px;cursor:pointer;
+          background:var(--bg-hover);border-radius:8px;padding:5px 10px;
+          font-size:12px;color:var(--text);transition:background .15s;
+        " onmouseover="this.style.background='var(--bg-input)'" onmouseout="this.style.background='var(--bg-hover)'">
+          <div style="width:20px;height:20px;border-radius:50%;background:${avatarColor(u)};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;overflow:hidden;flex-shrink:0;">${
+            avatarCache[u] ? `<img src="${avatarCache[u]}" style="width:100%;height:100%;object-fit:cover;"/>` : u.charAt(0).toUpperCase()
+          }</div>
+          <span>${escHtml(u)}</span>
+        </div>`).join('');
+    } else {
+      list.style.display = 'none';
+      const count = JSON.parse(list.dataset.mutuals || '[]').length;
+      btn.textContent = `Show (${count})`;
+    }
+  }
+  window.toggleMutuals = toggleMutuals;
 
   document.getElementById('profile-close-btn').addEventListener('click', () => {
     profileOverlay.classList.add('hidden');
@@ -2233,8 +2363,11 @@
     currentChannel = ch;
     renderServerChannels(server);
     clearMessages();
-    document.getElementById('header-channel-name').textContent = channel.name;
-    document.querySelector('#channel-header .hash').textContent = '#';
+    // Rebuild channel header (openDM may have replaced innerHTML)
+    document.getElementById('channel-header').innerHTML = `
+      <span class="hash">#</span>
+      <span id="header-channel-name">${escHtml(channel.name)}</span>
+      <span id="connection-status" class="status-online">connected</span>`;
     document.getElementById('msg-input').placeholder = `Message #${channel.name}…`;
     socket.emit('switch_channel', { channel: ch });
   }
@@ -2740,6 +2873,7 @@
           unreadDMs.add(otherUser);
           renderFriends(myFriends);
           updateBadge(1);
+          playNotifSound();
         } else {
           // DM is open — mark as read immediately
           setTimeout(() => emitMarkRead(msg.channel), 300);
@@ -3099,6 +3233,10 @@
   // Home page canvas
   const homeBgCanvas = document.getElementById('home-bg-canvas');
   if (homeBgCanvas) createAnimBg(homeBgCanvas, getAccentRgb);
+
+  // DM background canvas (shown when dm-bg-on class is active)
+  const dmBgCanvas = document.getElementById('dm-bg-canvas');
+  if (dmBgCanvas) createAnimBg(dmBgCanvas, getAccentRgb);
 </script>
 </body>
 </html>
