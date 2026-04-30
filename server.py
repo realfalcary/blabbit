@@ -697,13 +697,32 @@ def on_message(data):
         # Emit directly to each participant's SID
         participants = ch.replace('dm:', '').split(':')
         delivered = set()
+        recipient_online = False
         for sid, info in online_users.items():
             if info['username'] in participants and sid not in delivered:
                 socketio.emit('message', msg, to=sid)
                 delivered.add(sid)
+                if info['username'] != user['username']:
+                    recipient_online = True
+        # Tell sender if recipient is online (delivered)
+        if recipient_online:
+            socketio.emit('message_delivered', {'id': msg_id}, to=request.sid)
     else:
         # Server channel — emit to the room
         emit('message', msg, to=ch)
+
+@socketio.on('mark_read')
+def on_mark_read(data):
+    if request.sid not in online_users: return
+    ch = data.get('channel')
+    msg_id = data.get('last_id')
+    if not ch or not msg_id: return
+    # Tell the other participant their message was read
+    participants = ch.replace('dm:', '').split(':')
+    reader = online_users[request.sid]['username']
+    for sid, info in online_users.items():
+        if info['username'] in participants and info['username'] != reader:
+            socketio.emit('message_read', {'channel': ch, 'last_id': msg_id, 'reader': reader}, to=sid)
 
 @socketio.on('disconnect')
 def on_disconnect():
