@@ -802,7 +802,26 @@
       50%      { box-shadow: 0 0 22px #3ddc97cc; }
     }
 
-    /* ─── MISC ───────────────────────────────────────── */
+    /* ─── ANIMATED LOGIN BG ──────────────────────────── */
+    #login-overlay { position: relative; }
+    #login-bg-canvas { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+    #login-overlay > #login-box { position: relative; z-index: 1; }
+
+    /* ─── SETTINGS PAGE ANIMATED BG ─────────────────── */
+    #settings-bg-canvas { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+    #settings-page-box { position: relative; z-index: 1; }
+
+    /* ─── PROFILE BANNER UPLOAD ──────────────────────── */
+    #profile-banner-upload-btn {
+      position: absolute; bottom: 8px; right: 8px; z-index: 5;
+      background: #00000066; border: 1px solid #ffffff22; border-radius: 8px;
+      padding: 4px 10px; color: #fff; font-size: 11px; font-weight: 600;
+      cursor: pointer; font-family: var(--font-ui); transition: background .15s;
+      display: none;
+    }
+    #profile-banner:hover #profile-banner-upload-btn { display: block; }
+    #profile-banner-upload-btn:hover { background: #00000099; }
+    #profile-banner-file { display: none; }
     #connection-status { font-size: 11px; font-family: var(--font-mono); padding: 3px 10px; border-radius: 20px; margin-left: auto; }
     .status-online  { background: #f0a0c020; color: var(--online); }
     .status-offline { background: #ff4a4a20; color: #ff4a4a; }
@@ -816,6 +835,7 @@
 
 <!-- Auth Modal -->
 <div class="modal-overlay" id="login-overlay">
+  <canvas id="login-bg-canvas"></canvas>
   <div id="login-box">
     <img src="/static/logo.png" alt="Blabbit" style="width:260px;object-fit:contain;margin-bottom:8px;"/>
     <div class="auth-tabs">
@@ -852,7 +872,10 @@
 <div class="modal-overlay hidden" id="profile-overlay">
   <div id="profile-box">
     <button id="profile-close-btn">✕</button>
-    <div id="profile-banner"></div>
+    <div id="profile-banner">
+      <button id="profile-banner-upload-btn">📷 Edit Banner</button>
+      <input id="profile-banner-file" type="file" accept="image/*"/>
+    </div>
     <div id="profile-avatar-wrap"></div>
     <div id="profile-online-dot" style="display:none"></div>
     <div id="profile-body">
@@ -967,6 +990,7 @@
 
 <!-- Settings Page -->
 <div id="settings-page">
+  <canvas id="settings-bg-canvas"></canvas>
   <div id="settings-page-box">
     <button id="settings-page-back" title="Back">←</button>
     <h2>Set<span>tings</span></h2>
@@ -1645,6 +1669,13 @@
     const avWrap = document.getElementById('profile-avatar-wrap');
     renderAvatarEl(avWrap, username, avatarCache[username] || null);
 
+    // Banner
+    const bannerEl = document.getElementById('profile-banner');
+    bannerEl.style.backgroundImage = '';
+    bannerEl.style.backgroundSize = '';
+    document.getElementById('profile-banner-upload-btn').style.display =
+      username === myUsername ? 'block' : 'none';
+
     // Online dot
     const isOnline = onlineUsers.includes(username);
     document.getElementById('profile-online-dot').style.display = isOnline ? 'block' : 'none';
@@ -1653,6 +1684,13 @@
       const res  = await fetch('/api/profile/' + encodeURIComponent(username));
       const data = await res.json();
       if (!data.ok) return;
+
+      // Banner
+      if (data.banner) {
+        bannerEl.style.backgroundImage = `url(${data.banner})`;
+        bannerEl.style.backgroundSize = 'cover';
+        bannerEl.style.backgroundPosition = 'center';
+      }
 
       document.getElementById('profile-username').textContent = data.username;
 
@@ -2635,7 +2673,94 @@
 </script>
 
 <script>
-  // ── Animated background ────────────────────────────────
+  // ── Animated backgrounds (login + settings) ───────────
+  function makeAnimBg(canvasId, getColor) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let W, H, pts;
+    function resize() {
+      W = canvas.width = canvas.parentElement.offsetWidth;
+      H = canvas.height = canvas.parentElement.offsetHeight;
+    }
+    function init() {
+      pts = Array.from({length:50}, () => ({
+        x: Math.random()*W, y: Math.random()*H,
+        r: Math.random()*1.2+.3,
+        vx: (Math.random()-.5)*.2, vy: (Math.random()-.5)*.2,
+        a: Math.random()*.4+.1
+      }));
+    }
+    function draw() {
+      if (!canvas.parentElement.offsetWidth) { requestAnimationFrame(draw); return; }
+      resize();
+      const c = getColor();
+      ctx.clearRect(0,0,W,H);
+      const g = ctx.createRadialGradient(W*.5,H*.4,0,W*.5,H*.4,H*.9);
+      g.addColorStop(0, c.bg1); g.addColorStop(1, c.bg2);
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+      const bloom = ctx.createRadialGradient(W*.5,0,0,W*.5,0,H*.6);
+      bloom.addColorStop(0,c.bloom0); bloom.addColorStop(1,c.bloom1);
+      ctx.fillStyle=bloom; ctx.fillRect(0,0,W,H);
+      const md=130;
+      for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+        const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
+        if(d<md){ctx.strokeStyle=`rgba(${c.r},${c.g},${c.b},${(1-d/md)*.1})`;ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.stroke();}
+      }
+      for(const p of pts){
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(${c.r},${c.g},${c.b},${p.a})`;ctx.fill();
+        p.x+=p.vx;p.y+=p.vy;
+        if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+      }
+      requestAnimationFrame(draw);
+    }
+    resize(); init(); draw();
+    window.addEventListener('resize', () => { resize(); init(); });
+  }
+
+  function getThemeColor() {
+    const b = document.body;
+    if (b.classList.contains('purple-mode')) return { bg1:'#150e24', bg2:'#0e0a18', bloom0:'rgba(155,89,245,.06)', bloom1:'rgba(155,89,245,0)', r:155, g:89, b:245 };
+    if (b.classList.contains('blue-mode'))   return { bg1:'#0c1428', bg2:'#080e1a', bloom0:'rgba(74,158,255,.06)', bloom1:'rgba(74,158,255,0)', r:74, g:158, b:255 };
+    if (b.classList.contains('red-mode'))    return { bg1:'#240c0c', bg2:'#180808', bloom0:'rgba(255,74,74,.06)', bloom1:'rgba(255,74,74,0)', r:255, g:74, b:74 };
+    if (b.classList.contains('sunset-mode')) return { bg1:'#1e0e18', bg2:'#12080e', bloom0:'rgba(255,107,53,.06)', bloom1:'rgba(255,107,53,0)', r:255, g:107, b:53 };
+    if (b.classList.contains('light-mode'))  return { bg1:'#ede0ec', bg2:'#f5eef4', bloom0:'rgba(240,100,156,.04)', bloom1:'rgba(240,100,156,0)', r:240, g:100, b:156 };
+    return { bg1:'#1e1220', bg2:'#1a1118', bloom0:'rgba(240,100,156,.06)', bloom1:'rgba(240,100,156,0)', r:240, g:110, b:160 };
+  }
+
+  makeAnimBg('login-bg-canvas', getThemeColor);
+  makeAnimBg('settings-bg-canvas', getThemeColor);
+
+  // ── Profile banner ────────────────────────────────────
+  const bannerFileInput = document.getElementById('profile-banner-file');
+  const bannerUploadBtn = document.getElementById('profile-banner-upload-btn');
+
+  bannerUploadBtn.addEventListener('click', () => {
+    if (profileTarget !== myUsername) return;
+    bannerFileInput.click();
+  });
+
+  bannerFileInput.addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async ev => {
+      const dataUrl = ev.target.result;
+      // Save to server
+      const res = await fetch('/api/update-banner', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ banner: dataUrl })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        document.getElementById('profile-banner').style.backgroundImage = `url(${dataUrl})`;
+        document.getElementById('profile-banner').style.backgroundSize = 'cover';
+        document.getElementById('profile-banner').style.backgroundPosition = 'center';
+      }
+    };
+    reader.readAsDataURL(file);
+  });
   const bgCanvas = document.getElementById('bg-canvas');
   const bgCtx = bgCanvas.getContext('2d');
   let W, H, pts;

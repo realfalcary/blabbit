@@ -123,6 +123,8 @@ def init_db():
         except: pass
         try: db.execute('ALTER TABLE users ADD COLUMN about_me TEXT DEFAULT NULL')
         except: pass
+        try: db.execute('ALTER TABLE users ADD COLUMN banner TEXT DEFAULT NULL')
+        except: pass
         db.commit()
 
 def _dm_channel(a, b):
@@ -302,6 +304,17 @@ def delete_message():
     return jsonify({'ok': True})
 
 
+@app.route('/api/update-banner', methods=['POST'])
+def update_banner():
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    data = request.get_json()
+    banner = data.get('banner') or None
+    with get_db() as db:
+        db.execute('UPDATE users SET banner=? WHERE username=?', (banner, caller))
+        db.commit()
+    return jsonify({'ok': True})
+
 @app.route('/api/update-pronouns', methods=['POST'])
 def update_pronouns():
     caller = session.get('username')
@@ -341,7 +354,7 @@ def me():
 def profile(username):
     caller = session.get('username')
     with get_db() as db:
-        row = db.execute('SELECT username,created,pronouns,about_me FROM users WHERE username=? COLLATE NOCASE', (username,)).fetchone()
+        row = db.execute('SELECT username,created,pronouns,about_me,banner FROM users WHERE username=? COLLATE NOCASE', (username,)).fetchone()
     if not row: return jsonify({'ok':False,'error':'User not found.'}), 404
     badges = get_badges(username)
     avatar = avatars.get(username)
@@ -358,7 +371,8 @@ def profile(username):
             friend_state = 'incoming'
     return jsonify({'ok':True,'username':row['username'],'created':row['created'],
                     'badges':badges,'avatar':avatar,'friend_state':friend_state,
-                    'pronouns': row['pronouns'] or '', 'about_me': row['about_me'] or ''})
+                    'pronouns': row['pronouns'] or '', 'about_me': row['about_me'] or '',
+                    'banner': row['banner'] or ''})
 
 
 # ── Friends API ───────────────────────────────────────────
