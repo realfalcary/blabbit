@@ -389,15 +389,16 @@
       background-size: cover;
       background-position: center;
     }
+    #profile-banner.has-image::before { display: none; }
     #profile-banner::before {
       content: ''; position: absolute; inset: 0;
       background: repeating-linear-gradient(135deg, #f0649c0a 0px, #f0649c0a 1px, transparent 1px, transparent 20px);
-      pointer-events: none;
+      pointer-events: none; z-index: 0;
     }
     #profile-banner::after {
       content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40px;
       background: linear-gradient(to bottom, transparent, #1e1220);
-      pointer-events: none;
+      pointer-events: none; z-index: 1;
     }
 
     /* Avatar ring */
@@ -1756,18 +1757,19 @@
 
       // Banner + colors
       if (data.banner) {
+        bannerEl.classList.add('has-image');
         bannerEl.style.backgroundImage = `url(${data.banner})`;
         bannerEl.style.backgroundSize = 'cover';
         bannerEl.style.backgroundPosition = 'center';
         bannerEl.style.background = '';
       } else if (data.color1 || data.color2) {
+        bannerEl.classList.remove('has-image');
         const c1 = data.color1 || '#3a1828';
         const c2 = data.color2 || '#200e1e';
-        bannerEl.style.backgroundImage = '';
-        bannerEl.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
+        bannerEl.style.cssText = `background: linear-gradient(135deg, ${c1}, ${c2}); background-size: cover;`;
       } else {
-        bannerEl.style.backgroundImage = '';
-        bannerEl.style.background = '';
+        bannerEl.classList.remove('has-image');
+        bannerEl.style.cssText = '';
       }
 
       document.getElementById('profile-username').textContent = data.username;
