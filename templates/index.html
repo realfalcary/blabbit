@@ -128,7 +128,7 @@
     #messages {
       flex: 1; overflow-y: auto; padding: 20px 20px 10px;
       display: flex; flex-direction: column; gap: 2px;
-      scroll-behavior: auto;
+      scroll-behavior: auto; min-height: 0;
     }
     #messages::-webkit-scrollbar { width: 6px; }
     #messages::-webkit-scrollbar-thumb { background: #ffffff15; border-radius: 3px; }
@@ -503,7 +503,7 @@
     .server-rail-icon.active { border-radius: 12px !important; box-shadow: 0 0 0 3px var(--accent) !important; }
 
     #home-page { flex: 1; }
-    #chat-view { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    #chat-view { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; min-height: 0; }
 
     /* ─── RIGHT ONLINE PANEL ─────────────────────────── */
     #online-panel {
@@ -644,7 +644,7 @@
       background: var(--bg-sidebar); border: 1px solid #f0649c22;
       border-radius: 20px; width: 480px; padding: 36px 36px 32px;
       box-shadow: 0 16px 60px #00000066, 0 0 0 1px #f0649c10;
-      position: relative;
+      position: relative; max-height: 90vh; overflow-y: auto;
     }
     #settings-page-box::before {
       content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
@@ -812,15 +812,6 @@
     #settings-page-box { position: relative; z-index: 1; }
 
     /* ─── PROFILE BANNER UPLOAD ──────────────────────── */
-    #profile-banner-upload-btn {
-      position: absolute; bottom: 8px; right: 8px; z-index: 5;
-      background: #00000066; border: 1px solid #ffffff22; border-radius: 8px;
-      padding: 4px 10px; color: #fff; font-size: 11px; font-weight: 600;
-      cursor: pointer; font-family: var(--font-ui); transition: background .15s;
-      display: none;
-    }
-    #profile-banner:hover #profile-banner-upload-btn { display: block; }
-    #profile-banner-upload-btn:hover { background: #00000099; }
     #profile-banner-file { display: none; }
     #connection-status { font-size: 11px; font-family: var(--font-mono); padding: 3px 10px; border-radius: 20px; margin-left: auto; }
     .status-online  { background: #f0a0c020; color: var(--online); }
@@ -872,10 +863,7 @@
 <div class="modal-overlay hidden" id="profile-overlay">
   <div id="profile-box">
     <button id="profile-close-btn">✕</button>
-    <div id="profile-banner">
-      <button id="profile-banner-upload-btn">📷 Edit Banner</button>
-      <input id="profile-banner-file" type="file" accept="image/*"/>
-    </div>
+    <div id="profile-banner"></div>
     <div id="profile-avatar-wrap"></div>
     <div id="profile-online-dot" style="display:none"></div>
     <div id="profile-body">
@@ -1018,6 +1006,32 @@
         <button class="settings-confirm-btn" id="settings-pfp-save" title="Save photo">✓</button>
       </div>
       <div class="settings-msg" id="settings-pfp-msg"></div>
+    </div>
+
+    <!-- Banner -->
+    <div class="settings-row">
+      <div class="settings-row-label">Profile Banner</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div id="settings-banner-preview" style="
+          width:160px;height:50px;border-radius:8px;flex-shrink:0;
+          background:linear-gradient(135deg,var(--bg-hover),var(--bg-input));
+          border:1px solid #f0649c25;overflow:hidden;background-size:cover;background-position:center;
+        "></div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label id="settings-banner-upload-btn" for="settings-banner-file" style="
+            background:var(--bg-hover);border:1px solid #f0649c25;border-radius:8px;
+            padding:7px 14px;color:var(--text);font-family:var(--font-ui);font-size:13px;
+            font-weight:600;cursor:pointer;display:inline-block;
+          ">Choose Image</label>
+          <button id="settings-banner-remove-btn" style="
+            background:none;border:none;color:var(--text-dim);font-size:12px;
+            cursor:pointer;font-family:var(--font-ui);text-align:left;
+          ">Remove banner</button>
+          <input id="settings-banner-file" type="file" accept="image/*" style="display:none;"/>
+        </div>
+        <button class="settings-confirm-btn" id="settings-banner-save" title="Save banner">✓</button>
+      </div>
+      <div class="settings-msg" id="settings-banner-msg"></div>
     </div>
 
     <!-- Pronouns -->
@@ -1404,20 +1418,30 @@
   async function openSettingsPage() {
     if (!myUsername) return;
     pendingPfp = null;
+    pendingBanner = null;
     document.getElementById('settings-username-input').value = myUsername;
     document.getElementById('settings-username-msg').textContent = '';
     document.getElementById('settings-pronouns-msg').textContent = '';
     document.getElementById('settings-aboutme-msg').textContent = '';
+    document.getElementById('settings-banner-msg').textContent = '';
     document.getElementById('settings-pfp-msg').textContent = '';
     document.getElementById('settings-pfp-file').value = '';
+    document.getElementById('settings-banner-file').value = '';
     renderAvatarEl(document.getElementById('settings-pfp-preview'), myUsername, avatarCache[myUsername] || null);
-    // Load pronouns and about me from API
     try {
       const res = await fetch('/api/profile/' + encodeURIComponent(myUsername));
       const data = await res.json();
       if (data.ok) {
         document.getElementById('settings-pronouns-input').value = data.pronouns || '';
         document.getElementById('settings-aboutme-input').value = data.about_me || '';
+        const bannerPrev = document.getElementById('settings-banner-preview');
+        if (data.banner) {
+          bannerPrev.style.backgroundImage = `url(${data.banner})`;
+          bannerPrev.style.backgroundSize = 'cover';
+          bannerPrev.style.backgroundPosition = 'center';
+        } else {
+          bannerPrev.style.backgroundImage = '';
+        }
       }
     } catch(e) {}
     settingsPage.classList.add('open');
@@ -1673,8 +1697,6 @@
     const bannerEl = document.getElementById('profile-banner');
     bannerEl.style.backgroundImage = '';
     bannerEl.style.backgroundSize = '';
-    document.getElementById('profile-banner-upload-btn').style.display =
-      username === myUsername ? 'block' : 'none';
 
     // Online dot
     const isOnline = onlineUsers.includes(username);
@@ -2661,6 +2683,7 @@
     socket.emit('message', { text });
     msgInput.value = '';
     msgInput.style.height = 'auto';
+    setTimeout(() => scrollToBottom(false), 50);
   }
   document.getElementById('send-btn').addEventListener('click', sendMessage);
   msgInput.addEventListener('keydown', e => {
@@ -2732,34 +2755,44 @@
   makeAnimBg('login-bg-canvas', getThemeColor);
   makeAnimBg('settings-bg-canvas', getThemeColor);
 
-  // ── Profile banner ────────────────────────────────────
-  const bannerFileInput = document.getElementById('profile-banner-file');
-  const bannerUploadBtn = document.getElementById('profile-banner-upload-btn');
+  // ── Banner (settings) ─────────────────────────────────
+  let pendingBanner = null;
 
-  bannerUploadBtn.addEventListener('click', () => {
-    if (profileTarget !== myUsername) return;
-    bannerFileInput.click();
-  });
-
-  bannerFileInput.addEventListener('change', async e => {
+  document.getElementById('settings-banner-file').addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = async ev => {
-      const dataUrl = ev.target.result;
-      // Save to server
-      const res = await fetch('/api/update-banner', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ banner: dataUrl })
-      });
-      const data = await res.json();
-      if (data.ok) {
-        document.getElementById('profile-banner').style.backgroundImage = `url(${dataUrl})`;
-        document.getElementById('profile-banner').style.backgroundSize = 'cover';
-        document.getElementById('profile-banner').style.backgroundPosition = 'center';
-      }
+    reader.onload = ev => {
+      pendingBanner = ev.target.result;
+      const prev = document.getElementById('settings-banner-preview');
+      prev.style.backgroundImage = `url(${pendingBanner})`;
+      prev.style.backgroundSize = 'cover';
+      prev.style.backgroundPosition = 'center';
     };
     reader.readAsDataURL(file);
+  });
+
+  document.getElementById('settings-banner-remove-btn').addEventListener('click', () => {
+    pendingBanner = '__remove__';
+    document.getElementById('settings-banner-preview').style.backgroundImage = '';
+  });
+
+  document.getElementById('settings-banner-save').addEventListener('click', async () => {
+    const msgEl = document.getElementById('settings-banner-msg');
+    if (!pendingBanner) { msgEl.textContent = 'Pick an image first.'; msgEl.className = 'settings-msg err'; return; }
+    const banner = pendingBanner === '__remove__' ? null : pendingBanner;
+    const res = await fetch('/api/update-banner', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ banner })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      pendingBanner = null;
+      msgEl.textContent = 'Banner saved!'; msgEl.className = 'settings-msg';
+      setTimeout(() => msgEl.textContent = '', 2500);
+    } else {
+      msgEl.textContent = 'Failed.'; msgEl.className = 'settings-msg err';
+    }
   });
   const bgCanvas = document.getElementById('bg-canvas');
   const bgCtx = bgCanvas.getContext('2d');
