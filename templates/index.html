@@ -384,17 +384,16 @@
     /* Banner */
     #profile-banner {
       height: 120px; border-radius: 20px 20px 0 0; overflow: hidden;
-      background: linear-gradient(135deg, #3a1828 0%, #200e1e 40%, #2a1228 100%);
       position: relative;
-      background-size: cover;
-      background-position: center;
+      background-size: cover !important;
+      background-position: center !important;
     }
-    #profile-banner.has-image::before { display: none; }
     #profile-banner::before {
       content: ''; position: absolute; inset: 0;
       background: repeating-linear-gradient(135deg, #f0649c0a 0px, #f0649c0a 1px, transparent 1px, transparent 20px);
       pointer-events: none; z-index: 0;
     }
+    #profile-banner.has-bg::before { display: none; }
     #profile-banner::after {
       content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40px;
       background: linear-gradient(to bottom, transparent, #1e1220);
@@ -1741,8 +1740,9 @@
 
     // Banner - reset first
     const bannerEl = document.getElementById('profile-banner');
-    bannerEl.className = bannerEl.className.replace('has-image', '').trim();
-    bannerEl.removeAttribute('style');
+    bannerEl.classList.remove('has-bg', 'has-image');
+    bannerEl.style.backgroundImage = '';
+    bannerEl.style.background = 'linear-gradient(135deg, #3a1828, #200e1e, #2a1228)';
 
     // Online dot
     const isOnline = onlineUsers.includes(username);
@@ -1755,16 +1755,19 @@
 
       // Banner + colors
       if (data.banner) {
-        bannerEl.classList.add('has-image');
-        bannerEl.setAttribute('style', `background-image: url(${data.banner}) !important; background-size: cover !important; background-position: center !important;`);
+        bannerEl.classList.add('has-bg');
+        bannerEl.style.backgroundImage = `url("${data.banner}")`;
+        bannerEl.style.background = '';
       } else if (data.color1 || data.color2) {
-        bannerEl.classList.remove('has-image');
+        bannerEl.classList.add('has-bg');
         const c1 = data.color1 || '#3a1828';
         const c2 = data.color2 || '#200e1e';
-        bannerEl.setAttribute('style', `background: linear-gradient(135deg, ${c1}, ${c2}) !important;`);
+        bannerEl.style.backgroundImage = '';
+        bannerEl.style.background = `linear-gradient(135deg, ${c1}, ${c2})`;
       } else {
-        bannerEl.classList.remove('has-image');
-        bannerEl.removeAttribute('style');
+        bannerEl.classList.remove('has-bg');
+        bannerEl.style.backgroundImage = '';
+        bannerEl.style.background = 'linear-gradient(135deg, #3a1828, #200e1e, #2a1228)';
       }
 
       document.getElementById('profile-username').textContent = data.username;
