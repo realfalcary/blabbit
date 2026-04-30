@@ -359,6 +359,10 @@ def logout():
     session.pop('username', None)
     return jsonify({'ok':True})
 
+@app.route('/api/version')
+def get_version():
+    return jsonify({'version': '1.0.23'})
+
 @app.route('/api/me')
 def me():
     username = session.get('username')
