@@ -1741,10 +1741,8 @@
 
     // Banner - reset first
     const bannerEl = document.getElementById('profile-banner');
-    bannerEl.style.backgroundImage = '';
-    bannerEl.style.backgroundSize = '';
-    bannerEl.style.backgroundPosition = '';
-    bannerEl.style.background = '';
+    bannerEl.className = bannerEl.className.replace('has-image', '').trim();
+    bannerEl.removeAttribute('style');
 
     // Online dot
     const isOnline = onlineUsers.includes(username);
@@ -1758,18 +1756,15 @@
       // Banner + colors
       if (data.banner) {
         bannerEl.classList.add('has-image');
-        bannerEl.style.backgroundImage = `url(${data.banner})`;
-        bannerEl.style.backgroundSize = 'cover';
-        bannerEl.style.backgroundPosition = 'center';
-        bannerEl.style.background = '';
+        bannerEl.setAttribute('style', `background-image: url(${data.banner}) !important; background-size: cover !important; background-position: center !important;`);
       } else if (data.color1 || data.color2) {
         bannerEl.classList.remove('has-image');
         const c1 = data.color1 || '#3a1828';
         const c2 = data.color2 || '#200e1e';
-        bannerEl.style.cssText = `background: linear-gradient(135deg, ${c1}, ${c2}); background-size: cover;`;
+        bannerEl.setAttribute('style', `background: linear-gradient(135deg, ${c1}, ${c2}) !important;`);
       } else {
         bannerEl.classList.remove('has-image');
-        bannerEl.style.cssText = '';
+        bannerEl.removeAttribute('style');
       }
 
       document.getElementById('profile-username').textContent = data.username;
