@@ -176,6 +176,13 @@
 
     /* Delete button on hover — per message line */
     .msg-line { position: relative; }
+    .msg-group {
+      margin-bottom: 18px; display: flex; gap: 16px; align-items: flex-start;
+      padding: 4px 8px; border-radius: 8px; transition: background .1s;
+    }
+    .msg-group:hover { background: rgba(240,100,156,0.04); }
+    /* Fix friend search not getting clipped */
+    #home-sidebar { overflow: hidden; }
     .msg-delete-btn {
       position: absolute; top: 2px; right: 0;
       background: #2a1520; border: 1px solid #f0649c30; border-radius: 6px;
@@ -929,26 +936,15 @@
 <!-- App -->
 <div id="app">
   <div id="rail">
-    <div class="rail-icon" title="Blabbit" style="background:none;padding:0;overflow:hidden;">
-      <img src="/static/bunny.png" alt="Blabbit" style="width:44px;height:44px;object-fit:cover;border-radius:50%;"/>
-    </div>
-    <button id="settings-btn" title="Settings" style="
-      width:44px;height:44px;border-radius:50%;background:var(--bg-hover);border:none;
-      display:flex;align-items:center;justify-content:center;cursor:pointer;
-      color:var(--text-muted);font-size:20px;transition:background .15s,color .15s;
-      margin-top:4px;flex-shrink:0;
-    ">⚙</button>
-
-    <!-- Server icons in rail -->
-    <div style="width:100%;height:1px;background:#f0649c18;margin:8px 0;flex-shrink:0;"></div>
-
-    <!-- Home button -->
+    <!-- Home button at top -->
     <button id="home-rail-btn" title="Home" onclick="showHome()" style="
       width:44px;height:44px;border-radius:50%;background:var(--accent);border:none;
       display:flex;align-items:center;justify-content:center;cursor:pointer;
       font-size:20px;flex-shrink:0;transition:border-radius .2s,box-shadow .2s;
       box-shadow:0 0 10px var(--accent-glow);
     ">🏠</button>
+
+    <div style="width:100%;height:1px;background:#f0649c18;margin:4px 0;flex-shrink:0;"></div>
 
     <!-- Server icons dynamically added here -->
     <div id="server-rail"></div>
@@ -971,6 +967,14 @@
       box-shadow:0 0 14px #3ddc9755;
       animation:update-pulse 2s ease-in-out infinite;
     ">↑</button>
+
+    <!-- Settings pinned to bottom -->
+    <button id="settings-btn" title="Settings" style="
+      width:44px;height:44px;border-radius:50%;background:var(--bg-hover);border:none;
+      display:flex;align-items:center;justify-content:center;cursor:pointer;
+      color:var(--text-muted);font-size:20px;transition:background .15s,color .15s;
+      flex-shrink:0; margin-top:auto;
+    ">⚙</button>
   </div>
 
   <!-- Sidebar — changes based on view (home vs server) -->
@@ -982,16 +986,16 @@
     <!-- HOME VIEW sidebar -->
     <div id="home-sidebar">
       <!-- Friend search -->
-      <div style="padding:10px 12px 4px;">
-        <div style="display:flex;gap:6px;">
-          <input id="friend-search-input" type="text" placeholder="Search by username…" maxlength="24"
-            style="flex:1;background:var(--bg-input);border:1px solid #f0649c20;border-radius:8px;
+      <div style="padding:10px 12px 4px;box-sizing:border-box;">
+        <div style="display:flex;gap:6px;width:100%;">
+          <input id="friend-search-input" type="text" placeholder="Search username…" maxlength="24"
+            style="flex:1;min-width:0;background:var(--bg-input);border:1px solid #f0649c20;border-radius:8px;
             padding:7px 10px;color:var(--text);font-family:var(--font-ui);font-size:13px;outline:none;"
             onkeydown="if(event.key==='Enter') searchUser()"/>
           <button onclick="searchUser()" style="
             background:linear-gradient(135deg,#f0649c,#c83070);border:none;border-radius:8px;
-            padding:7px 12px;color:#fff;font-family:var(--font-ui);font-size:12px;
-            font-weight:600;cursor:pointer;white-space:nowrap;
+            padding:7px 10px;color:#fff;font-family:var(--font-ui);font-size:12px;
+            font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;
           ">Search</button>
         </div>
         <div id="friend-search-msg" style="font-size:11px;color:var(--text-dim);margin-top:4px;min-height:14px;"></div>
@@ -1105,7 +1109,7 @@
 
   <!-- Right panel: online users -->
   <div id="online-panel">
-    <div id="online-panel-label">Online</div>
+    <div id="online-panel-label">Online Friends</div>
     <div id="online-panel-list"></div>
   </div>
 </div>
@@ -1651,6 +1655,10 @@
     document.getElementById('msg-input').placeholder = `Message ${friendUsername}…`;
     clearMessages();
     renderFriends(myFriends);
+    // After switching channel, history will load — scroll to bottom then
+    socket.once('history', () => {
+      setTimeout(() => scrollToBottom(false), 100);
+    });
     socket.emit('switch_channel', { channel: ch });
   }
 
@@ -1909,6 +1917,7 @@
     document.getElementById('header-channel-name').textContent = channel.name;
     document.querySelector('#channel-header .hash').textContent = '#';
     document.getElementById('msg-input').placeholder = `Message #${channel.name}…`;
+    socket.once('history', () => { setTimeout(() => scrollToBottom(false), 100); });
     socket.emit('switch_channel', { channel: ch });
   }
 
@@ -2271,7 +2280,13 @@
   // ── Online users list ─────────────────────────────────
   function renderOnlineUsers() {
     const list = document.getElementById('online-panel-list');
-    list.innerHTML = onlineUsers.map(u => {
+    const friends = myFriends.accepted || [];
+    const onlineFriends = onlineUsers.filter(u => friends.includes(u));
+    if (onlineFriends.length === 0) {
+      list.innerHTML = `<div style="padding:10px 12px;font-size:12px;color:var(--text-dim)">No friends online</div>`;
+      return;
+    }
+    list.innerHTML = onlineFriends.map(u => {
       const url = avatarCache[u] || null;
       const ringClass = isFounder(u) ? ' founder-ring-sm' : '';
       const avInner = url
