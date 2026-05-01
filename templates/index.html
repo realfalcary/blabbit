@@ -890,7 +890,7 @@
 <!-- Profile Modal -->
 <div class="modal-overlay hidden" id="profile-overlay">
   <div id="profile-box">
-    <button id="profile-close-btn">âœ•</button>
+    <button id="profile-close-btn"><img src="/static/icons/close.svg" style="width:14px;height:14px;" alt="close"/></button>
     <div id="profile-banner"></div>
     <div id="profile-avatar-wrap"></div>
     <div id="profile-online-dot" style="display:none"></div>
@@ -1023,7 +1023,7 @@
 <div id="settings-page">
   <canvas id="settings-bg-canvas"></canvas>
   <div id="settings-page-box">
-    <button id="settings-page-back" title="Back">â†</button>
+    <button id="settings-page-back" title="Back"><img src="/static/icons/back.svg" style="width:16px;height:16px;opacity:0.8;" alt="back"/></button>
     <h2>Set<span>tings</span></h2>
 
     <!-- Username change -->
@@ -1031,7 +1031,7 @@
       <div class="settings-row-label">Username</div>
       <div class="settings-row-inner">
         <input class="settings-field" id="settings-username-input" type="text" maxlength="24" autocomplete="off"/>
-        <button class="settings-confirm-btn" id="settings-username-save" title="Save username">âœ“</button>
+        <button class="settings-confirm-btn" id="settings-username-save" title="Save username"><img src="/static/icons/check.svg" style="width:14px;height:14px;" alt="check"/></button>
       </div>
       <div class="settings-msg" id="settings-username-msg"></div>
     </div>
@@ -1046,7 +1046,7 @@
           <button id="settings-pfp-remove-btn">Remove photo</button>
           <input id="settings-pfp-file" type="file" accept="image/*"/>
         </div>
-        <button class="settings-confirm-btn" id="settings-pfp-save" title="Save photo">âœ“</button>
+        <button class="settings-confirm-btn" id="settings-pfp-save" title="Save photo"><img src="/static/icons/check.svg" style="width:14px;height:14px;" alt="check"/></button>
       </div>
       <div class="settings-msg" id="settings-pfp-msg"></div>
     </div>
@@ -1072,7 +1072,7 @@
           ">Remove banner</button>
           <input id="settings-banner-file" type="file" accept="image/*" style="display:none;"/>
         </div>
-        <button class="settings-confirm-btn" id="settings-banner-save" title="Save banner">âœ“</button>
+        <button class="settings-confirm-btn" id="settings-banner-save" title="Save banner"><img src="/static/icons/check.svg" style="width:14px;height:14px;" alt="check"/></button>
       </div>
       <div class="settings-msg" id="settings-banner-msg"></div>
     </div>
@@ -1099,11 +1099,8 @@
         </div>
         <input class="settings-field" id="settings-status-input" type="text" maxlength="60"
           placeholder="What are you up to?" autocomplete="off" style="flex:1;"/>
-        <button class="settings-confirm-btn" id="settings-status-save" title="Save status">âœ“</button>
-        <button id="settings-status-clear" style="
-          background:none;border:none;color:var(--text-dim);font-size:18px;
-          cursor:pointer;padding:0 4px;line-height:1;
-        " title="Clear status">Ã—</button>
+        <button class="settings-confirm-btn" id="settings-status-save" title="Save status"><img src="/static/icons/check.svg" style="width:14px;height:14px;" alt="check"/></button>
+        <button id="settings-status-clear" title="Clear status"><img src="/static/icons/clear.svg" style="width:16px;height:16px;" alt="clear"/></button>
       </div>
       <div class="settings-msg" id="settings-status-msg"></div>
     </div>
@@ -1113,7 +1110,7 @@
       <div class="settings-row-label">Pronouns</div>
       <div class="settings-row-inner">
         <input class="settings-field" id="settings-pronouns-input" type="text" maxlength="30" placeholder="e.g. she/her, they/them" autocomplete="off"/>
-        <button class="settings-confirm-btn" id="settings-pronouns-save" title="Save pronouns">âœ“</button>
+        <button class="settings-confirm-btn" id="settings-pronouns-save" title="Save pronouns"><img src="/static/icons/check.svg" style="width:14px;height:14px;" alt="check"/></button>
       </div>
       <div class="settings-msg" id="settings-pronouns-msg"></div>
     </div>
@@ -1123,7 +1120,7 @@
       <div class="settings-row-label">About Me</div>
       <div style="display:flex;gap:10px;align-items:flex-start;">
         <textarea class="settings-field" id="settings-aboutme-input" maxlength="200" placeholder="Tell people a little about yourselfâ€¦" rows="3" style="resize:none;"></textarea>
-        <button class="settings-confirm-btn" id="settings-aboutme-save" title="Save about me">âœ“</button>
+        <button class="settings-confirm-btn" id="settings-aboutme-save" title="Save about me"><img src="/static/icons/check.svg" style="width:14px;height:14px;" alt="check"/></button>
       </div>
       <div class="settings-msg" id="settings-aboutme-msg"></div>
     </div>
@@ -1204,7 +1201,7 @@
       font-size:20px;margin-top:4px;flex-shrink:0;
       box-shadow:0 0 14px #3ddc9755;
       animation:update-pulse 2s ease-in-out infinite;
-    ">âš™</button>
+    "><img src="/static/icons/update.svg" style="width:20px;height:20px;filter:brightness(10);" alt="update"/></button>
 
     <!-- Settings pinned to bottom -->
     <button id="settings-btn" title="Settings" style="
@@ -1212,7 +1209,7 @@
       display:flex;align-items:center;justify-content:center;cursor:pointer;
       color:var(--text-muted);font-size:20px;transition:background .15s,color .15s;
       flex-shrink:0; margin-top:auto;
-    ">â†‘</button>
+    "><img src="/static/icons/settings.svg" style="width:20px;height:20px;opacity:0.7;" alt="settings"/></button>
   </div>
 
   <!-- Sidebar â€” changes based on view (home vs server) -->
@@ -1322,7 +1319,7 @@
         <span id="connection-status" class="status-offline">connectingâ€¦</span>
       </div>
       <div id="messages">
-        <div class="welcome-msg"><div class="big">â‰¡Æ’Ã¦â•›</div>Select a server or DM to start chatting!</div>
+        <div class="welcome-msg"><div class="big">ðŸ‘¾</div>Select a server or DM to start chatting!</div>
       </div>
       <div id="input-area">
         <textarea id="msg-input" rows="1" placeholder="Messageâ€¦"></textarea>
@@ -2248,7 +2245,7 @@
           ${avHtml}
           <span class="friend-name" onclick="openProfile('${escHtml(u)}')" style="cursor:pointer">${escHtml(u)}</span>
           <div class="friend-actions">
-            <button class="friend-btn accept" onclick="friendAccept('${escHtml(u)}')">âœ“</button>
+            <button class="friend-btn accept" onclick="friendAccept('${escHtml(u)}')"><img src="/static/icons/check.svg" style="width:14px;height:14px;" alt="check"/></button>
             <button class="friend-btn deny"   onclick="friendDeny('${escHtml(u)}')">âœ•</button>
           </div>
         </div>`;
@@ -2265,7 +2262,7 @@
           ${avHtml}
           <span class="friend-name" onclick="openProfile('${escHtml(u)}')" style="cursor:pointer">${escHtml(u)}</span>
           <div class="friend-actions">
-            <button class="friend-btn msg" onclick="openDM('${escHtml(u)}')">ðŸ’¬</button>
+            <button class="friend-btn msg" onclick="openDM'${escHtml(u)}')"><img src="/static/icons/message.svg" style="width:14px;height:14px;" alt="message"/></button>
           </div>
         </div>`;
       }).join('');
@@ -2600,7 +2597,7 @@
     if (isDM) {
       messagesEl.innerHTML = '';
     } else {
-      messagesEl.innerHTML = `<div class="welcome-msg"><div class="big">â‰¡Æ’Ã´Ã®</div>Start of <strong>#${currentChannel || 'channel'}</strong></div>`;
+      messagesEl.innerHTML = `<div class="welcome-msg"><div class="big">ðŸ“Œ</div>Start of <strong>#${currentChannel || 'channel'}</strong></div>`;
     }
     lastUsername = null;
   }
@@ -2680,7 +2677,7 @@
 
       if (isTenor || isGiphy) {
         // Can't embed these directly â€” show as clickable link
-        embeds += `<div class="msg-text"><a href="${escHtml(url)}" target="_blank" rel="noopener" class="msg-embed-link">â‰¡Æ’Ã„â‚§ ${escHtml(url)}</a></div>`;
+        embeds += `<div class="msg-text"><a href="${escHtml(url)}" target="_blank" rel="noopener" class="msg-embed-link">ðŸ–¼ ${escHtml(url)}</a></div>`;
       } else {
         embeds += `<a class="msg-embed" href="${escHtml(url)}" target="_blank" rel="noopener">
           <img src="${escHtml(url)}" alt="image" loading="lazy"
