@@ -1,25 +1,41 @@
-from flask import Flask, render_template, request, session, jsonify
+from flask import Flask, render_template, request, session, jsonify, make_response
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from datetime import datetime, date, timedelta
 import sqlite3
 import hashlib
 import secrets
 import os
-
 import sys
 
 app = Flask(__name__)
 
-# Use AppData folder for writable files when running as bundled exe
 def get_data_dir():
+    # Check for explicit env var first (set this in Railway to /data)
+    env_dir = os.environ.get('BLABBIT_DATA_DIR')
+    if env_dir:
+        os.makedirs(env_dir, exist_ok=True)
+        return env_dir
+    # Railway persistent volume
+    if os.path.ismount('/data'):
+        return '/data'
+    # Fallback
     if getattr(sys, 'frozen', False):
-        # Running as PyInstaller bundle — use AppData
         data_dir = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), 'Blabbit')
     else:
-        # Running as normal Python script — use current directory
         data_dir = os.path.dirname(os.path.abspath(__file__))
     os.makedirs(data_dir, exist_ok=True)
     return data_dir
+
+def get_app_base_dir():
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+APP_BASE = get_app_base_dir()
+app.template_folder = os.path.join(APP_BASE, 'templates')
+app.static_folder   = os.path.join(APP_BASE, 'static')
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.jinja_env.auto_reload = True
 
 DATA_DIR = get_data_dir()
 
@@ -46,9 +62,7 @@ FOUNDER_USERNAME = 'cora'
 @app.before_request
 def make_session_permanent():
     session.permanent = True
-socketio = SocketIO(app, cors_allowed_origins="*")
 
-channels = { 'general': [], 'random': [], 'gaming': [], 'music': [] }
 online_users = {}   # sid -> {username, channel}
 avatars = {}        # username -> dataURL
 
@@ -83,7 +97,41 @@ def init_db():
             requester TEXT NOT NULL,
             UNIQUE(user_a, user_b)
         )''')
+        db.execute('''CREATE TABLE IF NOT EXISTS servers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            owner TEXT NOT NULL,
+            invite_code TEXT UNIQUE NOT NULL,
+            created TEXT NOT NULL,
+            icon TEXT DEFAULT NULL
+        )''')
+        db.execute('''CREATE TABLE IF NOT EXISTS server_channels (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            FOREIGN KEY(server_id) REFERENCES servers(id)
+        )''')
+        db.execute('''CREATE TABLE IF NOT EXISTS server_members (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            UNIQUE(server_id, username)
+        )''')
         try: db.execute('ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT NULL')
+        except: pass
+        try: db.execute('ALTER TABLE users ADD COLUMN pronouns TEXT DEFAULT NULL')
+        except: pass
+        try: db.execute('ALTER TABLE users ADD COLUMN about_me TEXT DEFAULT NULL')
+        except: pass
+        try: db.execute('ALTER TABLE users ADD COLUMN banner TEXT DEFAULT NULL')
+        except: pass
+        try: db.execute('ALTER TABLE users ADD COLUMN profile_color1 TEXT DEFAULT NULL')
+        except: pass
+        try: db.execute('ALTER TABLE users ADD COLUMN profile_color2 TEXT DEFAULT NULL')
+        except: pass
+        try: db.execute('ALTER TABLE users ADD COLUMN status_emoji TEXT DEFAULT NULL')
+        except: pass
+        try: db.execute('ALTER TABLE users ADD COLUMN status_text TEXT DEFAULT NULL')
         except: pass
         db.commit()
 
@@ -175,7 +223,13 @@ def friendship_status(a, b):
 # ── Auth ──────────────────────────────────────────────────
 @app.route('/')
 def index():
-    return render_template('index.html', channels=list(channels.keys()), founder=FOUNDER_USERNAME)
+    resp = render_template('index.html', founder=FOUNDER_USERNAME)
+    from flask import make_response
+    r = make_response(resp)
+    r.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    r.headers['Pragma'] = 'no-cache'
+    r.headers['Expires'] = '0'
+    return r
 
 @app.route('/api/signup', methods=['POST'])
 def signup():
@@ -258,10 +312,73 @@ def delete_message():
     return jsonify({'ok': True})
 
 
+@app.route('/api/update-profile-color', methods=['POST'])
+def update_profile_color():
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    data = request.get_json()
+    color1 = (data.get('color1') or '').strip()[:7] or None
+    color2 = (data.get('color2') or '').strip()[:7] or None
+    with get_db() as db:
+        db.execute('UPDATE users SET profile_color1=?, profile_color2=? WHERE username=?',
+                   (color1, color2, caller))
+        db.commit()
+    return jsonify({'ok': True})
+
+@app.route('/api/update-banner', methods=['POST'])
+def update_banner():
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    data = request.get_json()
+    banner = data.get('banner') or None
+    with get_db() as db:
+        db.execute('UPDATE users SET banner=? WHERE username=?', (banner, caller))
+        db.commit()
+    return jsonify({'ok': True})
+
+@app.route('/api/update-status', methods=['POST'])
+def update_status():
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    data = request.get_json()
+    emoji = (data.get('emoji') or '').strip()[:8]
+    text  = (data.get('text')  or '').strip()[:60]
+    with get_db() as db:
+        db.execute('UPDATE users SET status_emoji=?, status_text=? WHERE username=?',
+                   (emoji or None, text or None, caller))
+        db.commit()
+    return jsonify({'ok': True})
+
+@app.route('/api/update-pronouns', methods=['POST'])
+def update_pronouns():
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    data = request.get_json()
+    pronouns = (data.get('pronouns') or '').strip()[:30]
+    with get_db() as db:
+        db.execute('UPDATE users SET pronouns=? WHERE username=?', (pronouns or None, caller))
+        db.commit()
+    return jsonify({'ok': True})
+
+@app.route('/api/update-aboutme', methods=['POST'])
+def update_aboutme():
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    data = request.get_json()
+    about_me = (data.get('about_me') or '').strip()[:200]
+    with get_db() as db:
+        db.execute('UPDATE users SET about_me=? WHERE username=?', (about_me or None, caller))
+        db.commit()
+    return jsonify({'ok': True})
+
 @app.route('/api/logout', methods=['POST'])
 def logout():
     session.pop('username', None)
     return jsonify({'ok':True})
+
+@app.route('/api/version')
+def get_version():
+    return jsonify({'version': '1.0.23'})
 
 @app.route('/api/me')
 def me():
@@ -271,11 +388,27 @@ def me():
 
 
 # ── Profile ───────────────────────────────────────────────
+@app.route('/api/mutual-friends/<username>', methods=['GET'])
+def get_mutual_friends(username):
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    with get_db() as db:
+        def get_friends(u):
+            rows = db.execute(
+                "SELECT CASE WHEN user_a=? THEN user_b ELSE user_a END AS friend FROM friends WHERE (user_a=? OR user_b=?) AND status='accepted'",
+                (u, u, u)
+            ).fetchall()
+            return {r['friend'] for r in rows}
+        caller_friends = get_friends(caller)
+        target_friends = get_friends(username)
+        mutuals = sorted(caller_friends & target_friends)
+    return jsonify({'ok': True, 'mutuals': mutuals})
+
 @app.route('/api/profile/<username>')
 def profile(username):
     caller = session.get('username')
     with get_db() as db:
-        row = db.execute('SELECT username,created FROM users WHERE username=?', (username,)).fetchone()
+        row = db.execute('SELECT username,created,pronouns,about_me,banner,profile_color1,profile_color2,status_emoji,status_text FROM users WHERE username=? COLLATE NOCASE', (username,)).fetchone()
     if not row: return jsonify({'ok':False,'error':'User not found.'}), 404
     badges = get_badges(username)
     avatar = avatars.get(username)
@@ -291,7 +424,11 @@ def profile(username):
         else:
             friend_state = 'incoming'
     return jsonify({'ok':True,'username':row['username'],'created':row['created'],
-                    'badges':badges,'avatar':avatar,'friend_state':friend_state})
+                    'badges':badges,'avatar':avatar,'friend_state':friend_state,
+                    'pronouns': row['pronouns'] or '', 'about_me': row['about_me'] or '',
+                    'banner': row['banner'] or '',
+                    'color1': row['profile_color1'] or '', 'color2': row['profile_color2'] or '',
+                    'status_emoji': row['status_emoji'] or '', 'status_text': row['status_text'] or ''})
 
 
 # ── Friends API ───────────────────────────────────────────
@@ -372,6 +509,134 @@ def _notify_friend_update(username):
             friends = get_friends(username)
             socketio.emit('friends_update', friends, to=sid)
 
+def get_user_servers(username):
+    with get_db() as db:
+        rows = db.execute('''
+            SELECT s.id, s.name, s.owner, s.invite_code, s.icon
+            FROM servers s
+            JOIN server_members sm ON s.id = sm.server_id
+            WHERE sm.username = ?
+            ORDER BY s.id ASC
+        ''', (username,)).fetchall()
+    result = []
+    for r in rows:
+        with get_db() as db:
+            channels = db.execute(
+                'SELECT id, name FROM server_channels WHERE server_id=? ORDER BY id ASC',
+                (r['id'],)).fetchall()
+        result.append({
+            'id': r['id'], 'name': r['name'], 'owner': r['owner'],
+            'invite_code': r['invite_code'], 'icon': r['icon'],
+            'channels': [{'id': c['id'], 'name': c['name']} for c in channels]
+        })
+    return result
+
+
+# ── Server API ────────────────────────────────────────────
+@app.route('/api/servers', methods=['GET'])
+def list_servers():
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    return jsonify({'ok': True, 'servers': get_user_servers(caller)})
+
+@app.route('/api/servers/create', methods=['POST'])
+def create_server():
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    data = request.get_json()
+    name = (data.get('name') or '').strip()
+    if not name or len(name) < 2:
+        return jsonify({'ok': False, 'error': 'Server name must be at least 2 characters.'}), 400
+    invite_code = secrets.token_urlsafe(8)
+    created = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+    with get_db() as db:
+        cur = db.execute(
+            'INSERT INTO servers (name, owner, invite_code, created) VALUES (?,?,?,?)',
+            (name, caller, invite_code, created))
+        server_id = cur.lastrowid
+        # Create default general channel
+        db.execute('INSERT INTO server_channels (server_id, name) VALUES (?,?)', (server_id, 'general'))
+        # Add owner as member
+        db.execute('INSERT INTO server_members (server_id, username) VALUES (?,?)', (server_id, caller))
+        db.commit()
+    return jsonify({'ok': True, 'server_id': server_id, 'invite_code': invite_code})
+
+@app.route('/api/servers/join', methods=['POST'])
+def join_server():
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    data = request.get_json()
+    invite_code = (data.get('invite_code') or '').strip()
+    with get_db() as db:
+        server = db.execute('SELECT * FROM servers WHERE invite_code=?', (invite_code,)).fetchone()
+        if not server: return jsonify({'ok': False, 'error': 'Invalid invite code.'}), 404
+        try:
+            db.execute('INSERT INTO server_members (server_id, username) VALUES (?,?)',
+                       (server['id'], caller))
+            db.commit()
+        except sqlite3.IntegrityError:
+            return jsonify({'ok': False, 'error': 'Already a member.'}), 409
+    return jsonify({'ok': True, 'server_id': server['id']})
+
+@app.route('/api/servers/<int:server_id>/channels', methods=['POST'])
+def create_channel(server_id):
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    with get_db() as db:
+        server = db.execute('SELECT * FROM servers WHERE id=?', (server_id,)).fetchone()
+        if not server: return jsonify({'ok': False, 'error': 'Server not found.'}), 404
+        if server['owner'] != caller:
+            return jsonify({'ok': False, 'error': 'Only the server owner can add channels.'}), 403
+        data = request.get_json()
+        name = (data.get('name') or '').strip().lower().replace(' ', '-')
+        if not name: return jsonify({'ok': False, 'error': 'Channel name required.'}), 400
+        cur = db.execute('INSERT INTO server_channels (server_id, name) VALUES (?,?)', (server_id, name))
+        channel_id = cur.lastrowid
+        db.commit()
+    return jsonify({'ok': True, 'channel_id': channel_id, 'name': name})
+
+@app.route('/api/servers/<int:server_id>/leave', methods=['POST'])
+def leave_server(server_id):
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    with get_db() as db:
+        db.execute('DELETE FROM server_members WHERE server_id=? AND username=?', (server_id, caller))
+        db.commit()
+    return jsonify({'ok': True})
+
+@app.route('/api/servers/<int:server_id>/icon', methods=['POST'])
+def update_server_icon(server_id):
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    with get_db() as db:
+        server = db.execute('SELECT owner FROM servers WHERE id=?', (server_id,)).fetchone()
+        if not server: return jsonify({'ok': False, 'error': 'Not found'}), 404
+        if server['owner'] != caller: return jsonify({'ok': False, 'error': 'Not owner'}), 403
+        icon = request.get_json().get('icon')
+        db.execute('UPDATE servers SET icon=? WHERE id=?', (icon, server_id))
+        db.commit()
+    # Push updated server list to all members
+    with get_db() as db:
+        members = db.execute('SELECT username FROM server_members WHERE server_id=?', (server_id,)).fetchall()
+    for sid, info in online_users.items():
+        if any(m['username'] == info['username'] for m in members):
+            socketio.emit('servers_update', {'servers': get_user_servers(info['username'])}, to=sid)
+    return jsonify({'ok': True})
+
+@app.route('/api/servers/<int:server_id>/members', methods=['GET'])
+def server_members(server_id):
+    caller = session.get('username')
+    if not caller: return jsonify({'ok': False}), 401
+    with get_db() as db:
+        server = db.execute('SELECT owner FROM servers WHERE id=?', (server_id,)).fetchone()
+        if not server: return jsonify({'ok': False}), 404
+        rows = db.execute('SELECT username FROM server_members WHERE server_id=?', (server_id,)).fetchall()
+    online = {info['username'] for info in online_users.values()}
+    members = [{'username': r['username'], 'online': r['username'] in online,
+                'is_owner': r['username'] == server['owner']} for r in rows]
+    members.sort(key=lambda m: (not m['is_owner'], not m['online'], m['username'].lower()))
+    return jsonify({'ok': True, 'members': members, 'owner': server['owner']})
+
 
 # ── Badges ────────────────────────────────────────────────
 @app.route('/api/badge/grant', methods=['POST'])
@@ -381,7 +646,7 @@ def grant_badge():
     data = request.get_json()
     target   = (data.get('username') or '').strip()
     badge_id = (data.get('badge')    or '').strip()
-    if badge_id not in {'founder','early_tester','amethyst','iolite'}:
+    if badge_id not in {'founder','early_tester','amethyst','iolite','iris'}:
         return jsonify({'ok':False,'error':'Unknown badge.'}), 400
     with get_db() as db:
         if not db.execute('SELECT id FROM users WHERE username=?', (target,)).fetchone():
@@ -415,9 +680,12 @@ def _get_founder_usernames():
 @socketio.on('join')
 def on_join(data):
     username = data.get('username','').strip()
-    channel  = data.get('channel','general')
+    channel  = data.get('channel', None)
     if not username: return
-    if channel not in channels: channel = 'general'
+
+    # Default to home view (no channel)
+    if not channel:
+        channel = f'home:{username}'
 
     online_users[request.sid] = {'username': username, 'channel': channel}
 
@@ -426,16 +694,24 @@ def on_join(data):
         if db_avatar: avatars[username] = db_avatar
 
     join_room(channel)
-    # Also join all accepted DM rooms
+
+    # Join all accepted DM rooms
     friends = get_friends(username)
     for friend in friends['accepted']:
         join_room(_dm_channel(username, friend))
 
-    emit('history',      {'messages': load_messages(channel)})
+    # Join all server channels the user is a member of
+    for srv in get_user_servers(username):
+        for ch in srv['channels']:
+            join_room(f"server:{srv['id']}:{ch['id']}")
+
     emit('avatar_sync',  avatars)
     emit('founder_sync', {'founders': _get_founder_usernames()})
     emit('friends_update', friends)
-    emit('system', {'message': f'{username} joined #{channel}', 'timestamp': _now()}, to=channel)
+    emit('servers_update', {'servers': get_user_servers(username)})
+
+    if channel.startswith('server:'):
+        emit('history', {'messages': load_messages(channel)})
     _broadcast_users()
 
 @socketio.on('update_avatar')
@@ -456,11 +732,8 @@ def on_switch_channel(data):
     if request.sid not in online_users: return
     user = online_users[request.sid]
     old_ch = user['channel']
-    new_ch = data.get('channel', 'general')
-
-    # Allow switching to DM channels (prefixed with 'dm:')
-    is_dm = new_ch.startswith('dm:')
-    if not is_dm and new_ch not in channels: return
+    new_ch = data.get('channel', '')
+    if not new_ch: return
 
     leave_room(old_ch)
     join_room(new_ch)
@@ -469,8 +742,6 @@ def on_switch_channel(data):
     emit('history', {'messages': load_messages(new_ch)})
     emit('avatar_sync', avatars)
     emit('founder_sync', {'founders': _get_founder_usernames()})
-    if not is_dm:
-        emit('system', {'message': f'{user["username"]} joined #{new_ch}', 'timestamp': _now()}, to=new_ch)
     _broadcast_users()
 
 @socketio.on('message')
@@ -485,24 +756,40 @@ def on_message(data):
     msg = {'id': msg_id, 'username': user['username'], 'text': text, 'timestamp': ts, 'channel': ch}
 
     if ch.startswith('dm:'):
-        # For DMs, emit directly to each participant's SID so they get it
-        # regardless of which channel they're currently viewing
+        # Emit directly to each participant's SID
         participants = ch.replace('dm:', '').split(':')
         delivered = set()
+        recipient_online = False
         for sid, info in online_users.items():
             if info['username'] in participants and sid not in delivered:
                 socketio.emit('message', msg, to=sid)
                 delivered.add(sid)
+                if info['username'] != user['username']:
+                    recipient_online = True
+        # Tell sender if recipient is online (delivered)
+        if recipient_online:
+            socketio.emit('message_delivered', {'id': msg_id}, to=request.sid)
     else:
+        # Server channel — emit to the room
         emit('message', msg, to=ch)
+
+@socketio.on('mark_read')
+def on_mark_read(data):
+    if request.sid not in online_users: return
+    ch = data.get('channel')
+    msg_id = data.get('last_id')
+    if not ch or not msg_id: return
+    # Tell the other participant their message was read
+    participants = ch.replace('dm:', '').split(':')
+    reader = online_users[request.sid]['username']
+    for sid, info in online_users.items():
+        if info['username'] in participants and info['username'] != reader:
+            socketio.emit('message_read', {'channel': ch, 'last_id': msg_id, 'reader': reader}, to=sid)
 
 @socketio.on('disconnect')
 def on_disconnect():
     if request.sid not in online_users: return
-    user = online_users.pop(request.sid)
-    ch = user['channel']
-    if not ch.startswith('dm:'):
-        emit('system', {'message': f'{user["username"]} left the server', 'timestamp': _now()}, to=ch)
+    online_users.pop(request.sid)
     _broadcast_users()
 
 
@@ -518,5 +805,22 @@ def _broadcast_users():
 if __name__ == '__main__':
     init_db()
     avatars.update(load_all_avatars())
-    print("Blabbit running at http://localhost:5000")
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False, allow_unsafe_werkzeug=True)
+    port = int(os.environ.get('PORT', 5000))
+    print(f"Blabbit running at http://localhost:{port}")
+    socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)
+else:
+    # Running under gunicorn on Railway
+    import sys
+    print(f"[STARTUP] DATA_DIR={DATA_DIR}", flush=True)
+    print(f"[STARTUP] DB_PATH={DB_PATH}", flush=True)
+    try:
+        init_db()
+        print(f"[STARTUP] init_db() OK", flush=True)
+    except Exception as e:
+        print(f"[STARTUP] init_db() FAILED: {e}", flush=True)
+        sys.exit(1)
+    try:
+        avatars.update(load_all_avatars())
+        print(f"[STARTUP] avatars loaded: {len(avatars)}", flush=True)
+    except Exception as e:
+        print(f"[STARTUP] load_all_avatars() FAILED: {e}", flush=True)
