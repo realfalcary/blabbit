@@ -2221,7 +2221,7 @@
 
     if (data.outgoing && data.outgoing.length > 0) {
       html += data.outgoing.map(u =>
-        `<div class="friend-item" style="opacity:.6">
+        `<div class="friend-item" style="opacity:.6;cursor:pointer;" onclick="openProfile('${escHtml(u)}')">
           <div class="friend-av" style="background:${avatarColor(u)}">${u.charAt(0).toUpperCase()}</div>
           <span class="friend-name">${escHtml(u)}</span>
           <span class="friend-pending-label">sent</span>
