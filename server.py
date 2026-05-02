@@ -376,6 +376,23 @@ def logout():
     session.pop('username', None)
     return jsonify({'ok':True})
 
+@app.route('/api/admin/reset-password', methods=['POST'])
+def admin_reset_password():
+    secret = request.get_json().get('secret', '')
+    if secret != os.environ.get('ADMIN_SECRET', ''):
+        return jsonify({'ok': False, 'error': 'Unauthorized'}), 403
+    username = request.get_json().get('username', '').strip()
+    new_pass = request.get_json().get('password', '').strip()
+    if not username or not new_pass:
+        return jsonify({'ok': False, 'error': 'Missing fields'}), 400
+    hashed = hashlib.sha256(new_pass.encode()).hexdigest()
+    with get_db() as db:
+        rows = db.execute('UPDATE users SET password=? WHERE username=? COLLATE NOCASE', (hashed, username))
+        db.commit()
+        if rows.rowcount == 0:
+            return jsonify({'ok': False, 'error': 'User not found'})
+    return jsonify({'ok': True, 'message': f'Password reset for {username}'})
+
 @app.route('/api/version')
 def get_version():
     return jsonify({'version': '1.0.23'})
