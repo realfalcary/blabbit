@@ -608,8 +608,8 @@
       margin-left: auto;
     }
     @keyframes dm-glow-pulse {
-      0%,100% { box-shadow: 0 0 6px #f0649c88, 0 0 2px #fff3; }
-      50%      { box-shadow: 0 0 14px #f0649ccc, 0 0 4px #fff6; }
+      0%,100% { box-shadow: 0 0 6px var(--accent-glow), 0 0 2px #fff3; }
+      50%      { box-shadow: 0 0 14px var(--accent-glow), 0 0 4px #fff6; }
     }
     .dm-item[style*="border:1px solid"] { animation: dm-glow-pulse 2s ease-in-out infinite; }
 
@@ -2173,10 +2173,10 @@ async function saveStatus() {
         const isActive = activeDM === u ? ' active' : '';
         const hasUnread = unreadDMs && unreadDMs.has(u);
         const unreadStyle = hasUnread
-          ? `border:1px solid #f0649c; box-shadow: 0 0 8px #f0649c88, 0 0 2px #fff4; border-radius:8px; margin:2px 8px; padding:4px 8px;`
+          ? `border:1px solid var(--accent); box-shadow: 0 0 8px var(--accent-glow), 0 0 2px #fff4; border-radius:8px; margin:2px 8px; padding:4px 8px;`
           : '';
         const unreadBadge = hasUnread
-          ? `<span style="color:var(--accent);font-size:18px;font-weight:900;margin-left:auto;line-height:1;text-shadow:0 0 8px #f0649c;">!</span>`
+          ? `<span style="color:var(--accent);font-size:18px;font-weight:900;margin-left:auto;line-height:1;text-shadow:0 0 8px var(--accent-glow);">!</span>`
           : '';
         return `<div class="dm-item${isActive}" data-user="${escHtml(u)}" onclick="openDM('${escHtml(u)}')" style="${unreadStyle}">${avHtml}<span class="friend-name">${escHtml(u)}</span>${unreadBadge}</div>`;
       }).join('');
