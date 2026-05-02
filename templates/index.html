@@ -1081,22 +1081,6 @@
     <div class="settings-row">
       <div class="settings-row-label">Status</div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <!-- Emoji picker -->
-        <div style="position:relative;">
-          <button id="settings-status-emoji-btn" style="
-            width:40px;height:40px;border-radius:10px;background:var(--bg-input);
-            border:1px solid #f0649c20;font-size:20px;cursor:pointer;
-            display:flex;align-items:center;justify-content:center;
-          ">ðŸ˜Š</button>
-          <div id="settings-status-emoji-picker" style="
-            display:none;position:absolute;top:46px;left:0;z-index:100;
-            background:var(--bg-sidebar);border:1px solid #f0649c20;border-radius:12px;
-            padding:10px;display:none;flex-wrap:wrap;gap:4px;width:220px;
-            box-shadow:0 8px 32px #00000066;
-          ">
-            <div style="font-size:10px;color:var(--text-dim);width:100%;margin-bottom:4px;">Pick an emoji</div>
-          </div>
-        </div>
         <input class="settings-field" id="settings-status-input" type="text" maxlength="60"
           placeholder="What are you up to?" autocomplete="off" style="flex:1;"/>
         <button class="settings-confirm-btn" id="settings-status-save" title="Save status"><img src="/static/icons/check.svg" style="width:14px;height:14px;" alt="check"/></button>
@@ -1279,7 +1263,7 @@
         <div style="margin-bottom:28px;">
           <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;">Find a Friend</div>
           <div style="display:flex;gap:8px;">
-            <input id="friend-search-input" type="text" placeholder="Search by usernameâ€¦" maxlength="24"
+            <input id="friend-search-input" type="text" placeholder="Search by username" maxlength="24"
               style="flex:1;min-width:0;background:var(--bg-input);border:1px solid #f0649c20;border-radius:10px;
               padding:10px 14px;color:var(--text);font-family:var(--font-ui);font-size:14px;outline:none;"
               onkeydown="if(event.key==='Enter') searchUser()"/>
@@ -1527,7 +1511,7 @@
         document.getElementById('settings-pronouns-input').value = data.pronouns || '';
         document.getElementById('settings-aboutme-input').value = data.about_me || '';
         document.getElementById('settings-status-input').value = data.status_text || '';
-        document.getElementById('settings-status-emoji-btn').textContent = data.status_emoji || 'ðŸ˜Š';
+        
         const bannerPrev = document.getElementById('settings-banner-preview');
         if (data.banner) {
           bannerPrev.style.backgroundImage = `url(${data.banner})`;
@@ -1684,38 +1668,9 @@
   });
 
   // â”€â”€ Status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const STATUS_EMOJIS = ['ðŸ˜Š','ðŸ˜Ž','ðŸ˜´','ðŸ˜¤','ðŸ¤”','ðŸ˜‚','â¤ï¸','ðŸ”¥','ðŸŽ®','ðŸŽµ','ðŸ“š','ðŸ’»','ðŸ•','â˜•','âœˆï¸','ðŸŒ™','âš¡','ðŸŽ‰','ðŸ‘‹','ðŸ’¬','ðŸ¤','ðŸš€','ðŸŒ¸','ðŸ±','ðŸ¶','ðŸ‘‘'];
-  let currentStatusEmoji = 'ðŸ˜Š';
-
-  const emojiBtn = document.getElementById('settings-status-emoji-btn');
-  const emojiPicker = document.getElementById('settings-status-emoji-picker');
-
-  emojiBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    const isOpen = emojiPicker.style.display === 'flex';
-    emojiPicker.style.display = isOpen ? 'none' : 'flex';
-    if (!isOpen && emojiPicker.children.length <= 1) {
-      // Build picker
-      STATUS_EMOJIS.forEach(em => {
-        const btn = document.createElement('button');
-        btn.textContent = em;
-        btn.style.cssText = 'background:none;border:none;font-size:20px;cursor:pointer;border-radius:6px;padding:4px;transition:background .1s;';
-        btn.onmouseover = () => btn.style.background = 'var(--bg-hover)';
-        btn.onmouseout  = () => btn.style.background = 'none';
-        btn.onclick = () => {
-          currentStatusEmoji = em;
-          emojiBtn.textContent = em;
-          emojiPicker.style.display = 'none';
-        };
-        emojiPicker.appendChild(btn);
-      });
-    }
-  });
-  document.addEventListener('click', () => { emojiPicker.style.display = 'none'; });
-
-  async function saveStatus() {
+async function saveStatus() {
     const text = document.getElementById('settings-status-input').value.trim();
-    const emoji = currentStatusEmoji === 'ðŸ˜Š' && !text ? '' : currentStatusEmoji;
+    const emoji = '';
     const msgEl = document.getElementById('settings-status-msg');
     const res = await fetch('/api/update-status', {
       method: 'POST', headers: {'Content-Type':'application/json'},
@@ -1736,7 +1691,6 @@
   });
   document.getElementById('settings-status-clear').addEventListener('click', async () => {
     document.getElementById('settings-status-input').value = '';
-    currentStatusEmoji = 'ðŸ˜Š';
     emojiBtn.textContent = 'ðŸ˜Š';
     await fetch('/api/update-status', {
       method: 'POST', headers: {'Content-Type':'application/json'},
@@ -1976,18 +1930,18 @@
         friendAction.appendChild(b);
       } else if (data.friend_state === 'incoming') {
         const acc = document.createElement('button');
-        acc.className = 'profile-friend-btn accept'; acc.textContent = 'âœ“ Accept';
+        acc.innerHTML = '<img src="/static/icons/check.svg" style="width:12px;height:12px;vertical-align:middle;margin-right:5px;" alt=""/> Accept';
         acc.style.cssText = 'background:#3ddc9730;color:#3ddc97;padding:8px 16px;border-radius:10px;border:none;font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;margin-right:8px;';
         acc.onclick = async () => { await fetch('/api/friends/accept', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username}) }); window.openProfile(username); };
         const den = document.createElement('button');
-        den.className = 'profile-friend-btn deny'; den.textContent = 'âœ• Deny';
+        den.innerHTML = '<img src="/static/icons/close.svg" style="width:12px;height:12px;vertical-align:middle;margin-right:5px;filter:invert(50%) sepia(1) saturate(5) hue-rotate(300deg);" alt=""/> Deny';
         den.style.cssText = 'background:#ff666620;color:#ff6666;padding:8px 16px;border-radius:10px;border:none;font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;';
         den.onclick = async () => { await fetch('/api/friends/deny', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username}) }); window.openProfile(username); };
         friendAction.appendChild(acc); friendAction.appendChild(den);
       } else if (data.friend_state === 'friends') {
         const msg = document.createElement('button');
         msg.style.cssText = 'background:linear-gradient(135deg,#f0649c,#c83070);color:#fff;padding:8px 16px;border-radius:10px;border:none;font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;margin-right:8px;';
-        msg.textContent = 'ðŸ’¬ Message';
+        msg.innerHTML = '<img src="/static/icons/message.svg" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;filter:brightness(10);" alt="msg"/> Message';
         msg.onclick = () => { profileOverlay.classList.add('hidden'); openDM(username); };
         const rem = document.createElement('button');
         rem.style.cssText = 'background:var(--bg-hover);color:#ff6666;padding:8px 16px;border-radius:10px;border:none;font-family:var(--font-ui);font-size:13px;font-weight:600;cursor:pointer;';
@@ -2262,7 +2216,7 @@
           ${avHtml}
           <span class="friend-name" onclick="openProfile('${escHtml(u)}')" style="cursor:pointer">${escHtml(u)}</span>
           <div class="friend-actions">
-            <button class="friend-btn msg" onclick="openDM'${escHtml(u)}')"><img src="/static/icons/message.svg" style="width:14px;height:14px;" alt="message"/></button>
+            <button class="friend-btn msg" onclick="openDM('${escHtml(u)}')"><img src="/static/icons/message.svg" style="width:14px;height:14px;" alt="message"/></button>
           </div>
         </div>`;
       }).join('');
