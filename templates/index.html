@@ -604,6 +604,56 @@
     .friend-btn.accept:hover { background: #3ddc9722; border-color: #3ddc97; }
     .friend-btn.deny  { color: #ff8888; border-color: #ff888840; }
     .friend-btn.deny:hover  { background: #ff888822; border-color: #ff8888; }
+
+    /* â”€â”€â”€ FRIENDS PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    #friends-page-tabs {
+      display: flex; gap: 6px; margin-bottom: 22px; border-bottom: 1px solid #f0649c18; padding-bottom: 0;
+    }
+    .fp-tab {
+      background: none; border: none; color: var(--text-muted); font-family: var(--font-ui);
+      font-size: 13px; font-weight: 700; padding: 8px 14px; cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      border-bottom: 2px solid transparent; transition: color .15s, border-color .15s;
+    }
+    .fp-tab:hover { color: var(--text); }
+    .fp-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .fp-tab-badge {
+      background: var(--accent); color: #fff; border-radius: 10px;
+      font-size: 10px; font-weight: 700; padding: 1px 6px; line-height: 1.4;
+    }
+    .fp-section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: var(--text-muted);
+      text-transform: uppercase; margin: 0 0 10px;
+    }
+    .fp-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; margin-bottom: 6px; border-radius: 10px;
+      background: var(--bg-input); border: 1px solid #f0649c14;
+      font-size: 14px; color: var(--text); transition: background .15s, border-color .15s;
+    }
+    .fp-item:hover { background: var(--bg-hover); border-color: #f0649c30; }
+    .fp-avatar {
+      width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: #fff; overflow: hidden;
+    }
+    .fp-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+    .fp-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; font-weight: 600; }
+    .fp-name:hover { text-decoration: underline; }
+    .fp-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .fp-actions { display: flex; gap: 6px; margin-left: auto; }
+    .fp-btn {
+      background: none; border: 1px solid #f0649c30; border-radius: 6px;
+      color: var(--text-muted); font-size: 12px; font-weight: 600;
+      padding: 6px 12px; cursor: pointer; font-family: var(--font-ui);
+      transition: all .15s; white-space: nowrap; display: flex; align-items: center; gap: 5px;
+    }
+    .fp-btn:hover { background: #f0649c22; border-color: var(--accent); color: var(--text); }
+    .fp-btn.accept { color: #3ddc97; border-color: #3ddc9740; }
+    .fp-btn.accept:hover { background: #3ddc9722; border-color: #3ddc97; }
+    .fp-btn.deny, .fp-btn.remove { color: #ff8888; border-color: #ff888840; }
+    .fp-btn.deny:hover, .fp-btn.remove:hover { background: #ff888822; border-color: #ff8888; }
+    .fp-empty { color: var(--text-dim); font-size: 13px; padding: 8px 4px 24px; }
     .dm-unread {
       background: var(--accent); color: #fff; border-radius: 10px;
       font-size: 10px; font-weight: 700; padding: 1px 6px; line-height: 1.4;
@@ -1165,6 +1215,19 @@
       box-shadow:0 0 10px var(--accent-glow);overflow:hidden;padding:4px;
     "><img src="/static/favicon.png" style="width:100%;height:100%;object-fit:contain;filter:brightness(10);"/></button>
 
+    <!-- Friends button -->
+    <button id="friends-rail-btn" title="Friends" onclick="showFriendsPage()" style="
+      width:44px;height:44px;border-radius:50%;background:var(--bg-hover);border:none;
+      display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;
+      color:var(--text-muted);flex-shrink:0;transition:border-radius .2s,background .15s,color .15s;
+      margin-top:4px;
+    ">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      <span id="friends-rail-badge" style="display:none;position:absolute;top:-2px;right:-2px;background:var(--accent);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 5px;line-height:1.4;"></span>
+    </button>
+
     <div id="rail-server-separator" style="width:100%;height:1px;background:#f0649c18;margin:4px 0;flex-shrink:0;"></div>
 
     <!-- Server icons dynamically added here -->
@@ -1293,6 +1356,23 @@
             <div style="color:var(--text-dim);font-size:13px;">No recent conversations.</div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- FRIENDS PAGE -->
+    <div id="friends-page" style="display:none;flex:1;overflow-y:auto;padding:40px;position:relative;">
+      <div style="max-width:700px;margin:0 auto;position:relative;z-index:1;">
+        <h2 style="font-family:var(--font-display);font-size:26px;font-weight:900;margin-bottom:20px;">Friends</h2>
+
+        <div id="friends-page-tabs">
+          <button class="fp-tab active" data-tab="all" onclick="setFriendsPageTab('all')">All Friends</button>
+          <button class="fp-tab" data-tab="requests" onclick="setFriendsPageTab('requests')">
+            Requests <span id="fp-requests-badge" class="fp-tab-badge" style="display:none"></span>
+          </button>
+        </div>
+
+        <div id="fp-tab-all"></div>
+        <div id="fp-tab-requests" style="display:none"></div>
       </div>
     </div>
 
@@ -2121,11 +2201,15 @@ async function saveStatus() {
 
     // Switch to chat view
     document.getElementById('home-page').style.display = 'none';
+    document.getElementById('friends-page').style.display = 'none';
     document.getElementById('chat-view').style.display = 'flex';
     document.getElementById('home-sidebar').style.display = 'block';
     document.getElementById('server-sidebar').style.display = 'none';
     document.querySelectorAll('.server-rail-icon').forEach(e => e.classList.remove('active'));
     document.getElementById('home-rail-btn').style.borderRadius = '12px';
+    document.getElementById('friends-rail-btn').style.borderRadius = '50%';
+    document.getElementById('friends-rail-btn').style.background = 'var(--bg-hover)';
+    document.getElementById('friends-rail-btn').style.color = 'var(--text-muted)';
 
     const ch = dmChannel(myUsername, friendUsername);
     currentChannel = ch;
@@ -2160,6 +2244,22 @@ async function saveStatus() {
       badge.style.display = 'inline-block';
     } else {
       badge.style.display = 'none';
+    }
+
+    // Notification badge on the rail Friends button
+    const railBadge = document.getElementById('friends-rail-badge');
+    if (railBadge) {
+      if (data.incoming && data.incoming.length > 0) {
+        railBadge.textContent = data.incoming.length;
+        railBadge.style.display = 'inline-block';
+      } else {
+        railBadge.style.display = 'none';
+      }
+    }
+
+    // Keep the Friends page in sync if it's open
+    if (document.getElementById('friends-page').style.display !== 'none') {
+      renderFriendsPage();
     }
 
     // DM list
@@ -2276,13 +2376,125 @@ async function saveStatus() {
     currentServerId = null;
     currentServerData = null;
     document.getElementById('home-page').style.display = 'block';
+    document.getElementById('friends-page').style.display = 'none';
     document.getElementById('chat-view').style.display = 'none';
     document.getElementById('home-sidebar').style.display = 'block';
     document.getElementById('server-sidebar').style.display = 'none';
     document.querySelectorAll('.server-rail-icon').forEach(e => e.classList.remove('active'));
     document.getElementById('home-rail-btn').style.borderRadius = '12px';
+    document.getElementById('friends-rail-btn').style.borderRadius = '50%';
+    document.getElementById('friends-rail-btn').style.background = 'var(--bg-hover)';
+    document.getElementById('friends-rail-btn').style.color = 'var(--text-muted)';
     renderHomePage();
   }
+
+  // â”€â”€ Friends page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  let friendsPageTab = 'all';
+
+  function showFriendsPage() {
+    currentServerId = null;
+    currentServerData = null;
+    document.getElementById('home-page').style.display = 'none';
+    document.getElementById('chat-view').style.display = 'none';
+    document.getElementById('friends-page').style.display = 'block';
+    document.getElementById('home-sidebar').style.display = 'block';
+    document.getElementById('server-sidebar').style.display = 'none';
+    document.querySelectorAll('.server-rail-icon').forEach(e => e.classList.remove('active'));
+    document.getElementById('home-rail-btn').style.borderRadius = '50%';
+    document.getElementById('friends-rail-btn').style.borderRadius = '12px';
+    document.getElementById('friends-rail-btn').style.background = 'var(--accent)';
+    document.getElementById('friends-rail-btn').style.color = '#fff';
+    renderFriendsPage();
+  }
+
+  function setFriendsPageTab(tab) {
+    friendsPageTab = tab;
+    document.querySelectorAll('.fp-tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
+    document.getElementById('fp-tab-all').style.display = tab === 'all' ? 'block' : 'none';
+    document.getElementById('fp-tab-requests').style.display = tab === 'requests' ? 'block' : 'none';
+  }
+  window.setFriendsPageTab = setFriendsPageTab;
+
+  function fpAvatar(u) {
+    const url = avatarCache[u] || null;
+    return url
+      ? `<div class="fp-avatar"><img src="${url}" alt="${escHtml(u)}"/></div>`
+      : `<div class="fp-avatar" style="background:${avatarColor(u)}">${u.charAt(0).toUpperCase()}</div>`;
+  }
+
+  function renderFriendsPage() {
+    const accepted = myFriends.accepted || [];
+    const incoming = myFriends.incoming || [];
+    const outgoing = myFriends.outgoing || [];
+
+    // Requests tab badge (top of page + rail already handled in renderFriends)
+    const reqBadge = document.getElementById('fp-requests-badge');
+    if (incoming.length > 0) {
+      reqBadge.textContent = incoming.length;
+      reqBadge.style.display = 'inline-block';
+    } else {
+      reqBadge.style.display = 'none';
+    }
+
+    // All Friends tab
+    const allEl = document.getElementById('fp-tab-all');
+    if (accepted.length === 0) {
+      allEl.innerHTML = `<div class="fp-empty">No friends yet â€” search for someone from the Home page to add them.</div>`;
+    } else {
+      const sorted = [...accepted].sort((a, b) => a.localeCompare(b));
+      allEl.innerHTML = sorted.map(u => {
+        const isOnline = onlineUsers.includes(u);
+        return `<div class="fp-item">
+          ${fpAvatar(u)}
+          <span class="fp-name" onclick="openProfile('${escHtml(u)}')">${escHtml(u)}</span>
+          <span class="fp-status-dot" style="background:${isOnline ? '#3ddc97' : 'var(--text-dim)'}"></span>
+          <span style="font-size:12px;color:var(--text-dim);width:52px;">${isOnline ? 'online' : 'offline'}</span>
+          <div class="fp-actions">
+            <button class="fp-btn" onclick="openDM('${escHtml(u)}')">Message</button>
+            <button class="fp-btn remove" onclick="fpRemoveFriend('${escHtml(u)}')">Remove</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // Requests tab
+    const reqEl = document.getElementById('fp-tab-requests');
+    let reqHtml = '';
+
+    reqHtml += `<div class="fp-section-label">Incoming (${incoming.length})</div>`;
+    if (incoming.length === 0) {
+      reqHtml += `<div class="fp-empty">No incoming requests.</div>`;
+    } else {
+      reqHtml += incoming.map(u => `<div class="fp-item">
+        ${fpAvatar(u)}
+        <span class="fp-name" onclick="openProfile('${escHtml(u)}')">${escHtml(u)}</span>
+        <div class="fp-actions">
+          <button class="fp-btn accept" onclick="friendAccept('${escHtml(u)}')">Accept</button>
+          <button class="fp-btn deny" onclick="friendDeny('${escHtml(u)}')">Decline</button>
+        </div>
+      </div>`).join('');
+    }
+
+    reqHtml += `<div class="fp-section-label" style="margin-top:24px;">Outgoing (${outgoing.length})</div>`;
+    if (outgoing.length === 0) {
+      reqHtml += `<div class="fp-empty">No pending sent requests.</div>`;
+    } else {
+      reqHtml += outgoing.map(u => `<div class="fp-item">
+        ${fpAvatar(u)}
+        <span class="fp-name" onclick="openProfile('${escHtml(u)}')">${escHtml(u)}</span>
+        <span style="font-size:12px;color:var(--text-dim);">Pending</span>
+        <div class="fp-actions">
+          <button class="fp-btn deny" onclick="friendDeny('${escHtml(u)}')">Cancel</button>
+        </div>
+      </div>`).join('');
+    }
+
+    reqEl.innerHTML = reqHtml;
+  }
+
+  window.fpRemoveFriend = async function(username) {
+    await fetch('/api/friends/remove', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username}) });
+  };
 
   function renderHomePage() {
     // Online friends
@@ -2363,10 +2575,14 @@ async function saveStatus() {
     currentServerData = server;
 
     document.getElementById('home-page').style.display = 'none';
+    document.getElementById('friends-page').style.display = 'none';
     document.getElementById('chat-view').style.display = 'flex';
     document.getElementById('home-sidebar').style.display = 'none';
     document.getElementById('server-sidebar').style.display = 'flex';
     document.getElementById('server-sidebar-name').textContent = server.name;
+    document.getElementById('friends-rail-btn').style.borderRadius = '50%';
+    document.getElementById('friends-rail-btn').style.background = 'var(--bg-hover)';
+    document.getElementById('friends-rail-btn').style.color = 'var(--text-muted)';
 
     // Highlight active server in rail
     document.querySelectorAll('.server-rail-icon').forEach(e => e.classList.remove('active'));
