@@ -132,8 +132,21 @@
       display: flex; flex-direction: column; gap: 2px;
       scroll-behavior: auto; min-height: 0;
     }
-    #messages::-webkit-scrollbar { width: 6px; }
-    #messages::-webkit-scrollbar-thumb { background: #ffffff15; border-radius: 3px; }
+    /* â”€â”€â”€ CUSTOM SCROLLBARS (app-wide) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    * { scrollbar-width: thin; scrollbar-color: var(--accent) transparent; }
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background-image: linear-gradient(180deg, var(--accent2), var(--accent));
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background-image: linear-gradient(180deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 6px var(--accent-glow);
+    }
+    ::-webkit-scrollbar-corner { background: transparent; }
 
     .msg-group { margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start; }
     .msg-avatar {
@@ -542,8 +555,6 @@
       border-bottom: 1px solid #f0649c10;
     }
     #online-panel-list { padding: 8px 0; overflow-y: auto; flex: 1; }
-    #online-panel-list::-webkit-scrollbar { width: 4px; }
-    #online-panel-list::-webkit-scrollbar-thumb { background: #f0649c25; border-radius: 2px; }
 
     #online-panel-friends-view { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
@@ -731,7 +742,6 @@
       --text-dim:   #b890b0;
     }
     body.light-mode #channel-header { background: #e8d8e8; }
-    body.light-mode #messages::-webkit-scrollbar-thumb { background: #f0649c50; }
     body.light-mode .modal-overlay { background: #e0c8e0cc; }
     body.light-mode #login-box,
     body.light-mode #settings-box,
