@@ -6,6 +6,8 @@
   <title>Blabbit</title>
   <link rel="icon" type="image/png" href="/static/favicon.png"/>
   <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"/>
+  <link rel="manifest" href="/static/manifest.json"/>
+  <meta name="theme-color" content="#1a1118"/>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Playfair+Display:wght@700;900&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <style>
@@ -3242,6 +3244,15 @@ async function saveStatus() {
   // DM background canvas (shown when dm-bg-on class is active)
   const dmBgCanvas = document.getElementById('dm-bg-canvas');
   if (dmBgCanvas) createAnimBg(dmBgCanvas, getAccentRgb);
+
+  // PWA: register service worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(err => {
+        console.warn('Service worker registration failed:', err);
+      });
+    });
+  }
 </script>
 </body>
 </html>

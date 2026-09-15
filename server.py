@@ -7,6 +7,14 @@ import secrets
 import os
 import sys
 
+from flask import send_from_directory
+
+@app.route('/sw.js')
+def service_worker():
+    response = send_from_directory('static', 'sw.js')
+    response.headers['Content-Type'] = 'application/javascript'
+    return response
+
 app = Flask(__name__)
 
 def get_data_dir():
