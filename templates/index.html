@@ -544,6 +544,46 @@
     #online-panel-list { padding: 8px 0; overflow-y: auto; flex: 1; }
     #online-panel-list::-webkit-scrollbar { width: 4px; }
     #online-panel-list::-webkit-scrollbar-thumb { background: #f0649c25; border-radius: 2px; }
+
+    #online-panel-friends-view { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+    /* â”€â”€â”€ DM PROFILE PREVIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    #dm-profile-banner {
+      width: 100%; height: 64px; background: linear-gradient(135deg,#f0649c40,#c8307040);
+      flex-shrink: 0;
+    }
+    #dm-profile-banner.has-bg { background-size: cover; background-position: center; }
+    .dm-profile-avatar {
+      width: 64px; height: 64px; border-radius: 50%; margin: -32px auto 10px;
+      border: 3px solid var(--bg-sidebar); background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; font-weight: 700; color: #fff; position: relative; overflow: hidden;
+    }
+    .dm-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .dm-profile-online-dot {
+      position: absolute; bottom: 2px; right: 2px; width: 12px; height: 12px;
+      border-radius: 50%; background: #3ddc97; border: 2px solid var(--bg-sidebar);
+    }
+    .dm-profile-username { font-size: 16px; font-weight: 700; color: var(--text); }
+    .dm-profile-pronouns { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .dm-profile-status {
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      font-size: 12px; color: var(--text-muted); margin-top: 6px;
+    }
+    .dm-profile-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
+    .dm-profile-badges .badge-icon { width: 22px; height: 22px; }
+    .dm-profile-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--text-muted);
+      text-transform: uppercase; margin: 16px 0 6px; text-align: left;
+    }
+    .dm-profile-aboutme { font-size: 12px; color: var(--text); text-align: left; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+    .dm-profile-joined { font-size: 11px; color: var(--text-dim); margin-top: 14px; }
+    .dm-profile-view-full {
+      width: 100%; margin: 14px 0 16px; background: var(--bg-hover); border: 1px solid #f0649c30;
+      border-radius: 8px; padding: 8px; color: var(--text); font-family: var(--font-ui);
+      font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s, border-color .15s;
+    }
+    .dm-profile-view-full:hover { background: #f0649c22; border-color: var(--accent); }
     .online-user-item {
       display: flex; align-items: center; gap: 8px;
       padding: 5px 12px; cursor: pointer;
@@ -1397,10 +1437,28 @@
     </div>
   </div>
 
-  <!-- Right panel: online users -->
+  <!-- Right panel: online users / DM profile preview -->
   <div id="online-panel">
-    <div id="online-panel-label">Online Friends</div>
-    <div id="online-panel-list"></div>
+    <div id="online-panel-friends-view">
+      <div id="online-panel-label">Online Friends</div>
+      <div id="online-panel-list"></div>
+    </div>
+    <div id="dm-profile-view" style="display:none;flex-direction:column;flex:1;min-height:0;overflow-y:auto;">
+      <div id="dm-profile-banner"></div>
+      <div style="padding:0 16px;text-align:center;position:relative;">
+        <div id="dm-profile-avatar-wrap" class="dm-profile-avatar"></div>
+        <div id="dm-profile-username" class="dm-profile-username">â€¦</div>
+        <div id="dm-profile-pronouns" class="dm-profile-pronouns" style="display:none;"></div>
+        <div id="dm-profile-status" class="dm-profile-status" style="display:none;"></div>
+        <div id="dm-profile-badges" class="dm-profile-badges"></div>
+        <div id="dm-profile-aboutme-section" style="display:none;">
+          <div class="dm-profile-section-label">About</div>
+          <div id="dm-profile-aboutme" class="dm-profile-aboutme"></div>
+        </div>
+        <div id="dm-profile-joined" class="dm-profile-joined"></div>
+        <button id="dm-profile-view-full" class="dm-profile-view-full" onclick="openProfile(activeDM)">View Full Profile</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2212,6 +2270,8 @@ async function saveStatus() {
     document.getElementById('friends-rail-btn').style.background = 'var(--bg-hover)';
     document.getElementById('friends-rail-btn').style.color = 'var(--text-muted)';
 
+    renderDMProfilePreview(friendUsername);
+
     const ch = dmChannel(myUsername, friendUsername);
     currentChannel = ch;
     document.querySelectorAll('.dm-item').forEach(el => el.classList.remove('active'));
@@ -2386,6 +2446,8 @@ async function saveStatus() {
     document.getElementById('friends-rail-btn').style.borderRadius = '50%';
     document.getElementById('friends-rail-btn').style.background = 'var(--bg-hover)';
     document.getElementById('friends-rail-btn').style.color = 'var(--text-muted)';
+    activeDM = null;
+    showOnlinePanelFriendsList();
     renderHomePage();
   }
 
@@ -2405,6 +2467,8 @@ async function saveStatus() {
     document.getElementById('friends-rail-btn').style.borderRadius = '12px';
     document.getElementById('friends-rail-btn').style.background = 'var(--accent)';
     document.getElementById('friends-rail-btn').style.color = '#fff';
+    activeDM = null;
+    showOnlinePanelFriendsList();
     renderFriendsPage();
   }
 
@@ -2563,6 +2627,8 @@ async function saveStatus() {
     document.getElementById('friends-rail-btn').style.borderRadius = '50%';
     document.getElementById('friends-rail-btn').style.background = 'var(--bg-hover)';
     document.getElementById('friends-rail-btn').style.color = 'var(--text-muted)';
+    activeDM = null;
+    showOnlinePanelFriendsList();
 
     // Highlight active server in rail
     document.querySelectorAll('.server-rail-icon').forEach(e => e.classList.remove('active'));
@@ -3007,7 +3073,92 @@ async function saveStatus() {
     } catch { return ts; }
   }
 
-  // â”€â”€ Online users list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â”€â”€ Online panel: switch between friends list and DM profile preview â”€â”€
+  function showOnlinePanelFriendsList() {
+    document.getElementById('dm-profile-view').style.display = 'none';
+    document.getElementById('online-panel-friends-view').style.display = 'flex';
+  }
+
+  async function renderDMProfilePreview(username) {
+    document.getElementById('online-panel-friends-view').style.display = 'none';
+    const panel = document.getElementById('dm-profile-view');
+    panel.style.display = 'flex';
+
+    // Reset
+    document.getElementById('dm-profile-username').textContent = username;
+    document.getElementById('dm-profile-pronouns').style.display = 'none';
+    document.getElementById('dm-profile-status').style.display = 'none';
+    document.getElementById('dm-profile-badges').innerHTML = '';
+    document.getElementById('dm-profile-aboutme-section').style.display = 'none';
+    document.getElementById('dm-profile-joined').textContent = '';
+    const bannerEl = document.getElementById('dm-profile-banner');
+    bannerEl.classList.remove('has-bg');
+    bannerEl.removeAttribute('style');
+
+    const avWrap = document.getElementById('dm-profile-avatar-wrap');
+    renderAvatarEl(avWrap, username, avatarCache[username] || null);
+    const dot = document.createElement('div');
+    dot.id = 'dm-profile-online-dot';
+    dot.className = 'dm-profile-online-dot';
+    dot.style.display = onlineUsers.includes(username) ? 'block' : 'none';
+    avWrap.appendChild(dot);
+
+    try {
+      const res = await fetch('/api/profile/' + encodeURIComponent(username));
+      const data = await res.json();
+      if (!data.ok) return;
+      // Bail out if the user switched DMs while this was in flight
+      if (activeDM !== username) return;
+
+      if (data.banner) {
+        bannerEl.classList.add('has-bg');
+        bannerEl.setAttribute('style', `background-image: url("${data.banner}");`);
+      }
+
+      const pronounsEl = document.getElementById('dm-profile-pronouns');
+      if (data.pronouns) {
+        pronounsEl.textContent = `(${data.pronouns})`;
+        pronounsEl.style.display = 'block';
+      }
+
+      const statusEl = document.getElementById('dm-profile-status');
+      if (data.status_emoji || data.status_text) {
+        statusEl.style.display = 'flex';
+        statusEl.innerHTML = `${data.status_emoji ? `<span>${data.status_emoji}</span>` : ''}${data.status_text ? `<span>${escHtml(data.status_text)}</span>` : ''}`;
+      }
+
+      if (data.about_me) {
+        document.getElementById('dm-profile-aboutme').textContent = data.about_me;
+        document.getElementById('dm-profile-aboutme-section').style.display = 'block';
+      }
+
+      let joinedStr = data.created || '';
+      let displayDate = 'Unknown';
+      const isoMatch = joinedStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) {
+        const d = joinedStr.includes('T') ? new Date(joinedStr) : new Date(Number(isoMatch[1]), Number(isoMatch[2])-1, Number(isoMatch[3]));
+        if (!isNaN(d)) displayDate = d.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' });
+      }
+      document.getElementById('dm-profile-joined').textContent = 'Member since ' + displayDate;
+
+      const badgesEl = document.getElementById('dm-profile-badges');
+      badgesEl.innerHTML = '';
+      if (data.badges && data.badges.length > 0) {
+        data.badges.forEach(b => {
+          const meta = BADGE_META[b];
+          if (!meta) return;
+          const btn = document.createElement('div');
+          btn.className = 'badge-icon';
+          btn.innerHTML = meta.imgHtml + `<span class="badge-tip">${meta.label}</span>`;
+          btn.addEventListener('click', () => showBadgePopup(btn, b));
+          badgesEl.appendChild(btn);
+        });
+      }
+    } catch (e) {
+      // Leave the basic avatar/username shown even if the profile fetch fails
+    }
+  }
+
   function renderOnlineUsers() {
     const list = document.getElementById('online-panel-list');
     const friends = myFriends.accepted || [];
@@ -3077,6 +3228,12 @@ async function saveStatus() {
     }
     renderFriends(myFriends);
     renderServerRail();
+    if (activeDM && data[activeDM]) {
+      const avWrap = document.getElementById('dm-profile-avatar-wrap');
+      const dot = document.getElementById('dm-profile-online-dot');
+      renderAvatarEl(avWrap, activeDM, avatarCache[activeDM] || null);
+      if (dot) avWrap.appendChild(dot);
+    }
     gotAvatarSync = true;
     tryFlushHistory();
   });
@@ -3183,6 +3340,10 @@ async function saveStatus() {
     const all = Object.values(data.users).flat();
     onlineUsers = [...new Set(all)];
     renderOnlineUsers();
+    if (activeDM) {
+      const dot = document.getElementById('dm-profile-online-dot');
+      if (dot) dot.style.display = onlineUsers.includes(activeDM) ? 'block' : 'none';
+    }
   });
 
   // â”€â”€ Blabbit bunny blink â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
