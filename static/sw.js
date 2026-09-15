@@ -1,9 +1,10 @@
 // Blabbit service worker
-// Minimal caching: static assets only. Never touches /socket.io/ (websocket) traffic.
+// Network-first for the app shell (HTML) so deploys always show up.
+// Cache-first for static assets (images/CSS/JS) for speed + basic offline support.
+// Never touches /socket.io/ (websocket) traffic.
 
-const CACHE_NAME = 'blabbit-static-v1';
+const CACHE_NAME = 'blabbit-static-v2';
 const PRECACHE_URLS = [
-  '/',
   '/static/favicon.png',
   '/static/logo.png'
 ];
@@ -36,26 +37,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Only handle GET requests for our own origin's static assets.
+  // Only handle GET requests for our own origin.
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        // Only cache successful, basic (same-origin) responses for static files.
-        if (
-          response.ok &&
-          response.type === 'basic' &&
-          url.pathname.startsWith('/static/')
-        ) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
-        }
-        return response;
-      }).catch(() => cached);
-    })
-  );
+  // Navigation requests (the HTML page itself) — always go to the network first,
+  // so new deploys show up immediately. Fall back to cache only if offline.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Static assets — cache-first for speed, but refresh the cache in the background.
+  if (url.pathname.startsWith('/static/')) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        const fetchPromise = fetch(event.request).then((response) => {
+          if (response.ok && response.type === 'basic') {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          }
+          return response;
+        }).catch(() => cached);
+        return cached || fetchPromise;
+      })
+    );
+  }
 });
