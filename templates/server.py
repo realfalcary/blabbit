@@ -13,6 +13,7 @@ app = Flask(__name__)
 def service_worker():
     response = send_from_directory('static', 'sw.js')
     response.headers['Content-Type'] = 'application/javascript'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     return response
 
 def get_data_dir():

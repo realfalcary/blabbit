@@ -2519,24 +2519,26 @@ async function saveStatus() {
 
     // Servers list
     const serversEl = document.getElementById('home-servers-list');
-    if (myServers.length === 0) {
-      serversEl.innerHTML = `<div style="color:var(--text-dim);font-size:13px;">You haven't joined any servers yet.</div>`;
-    } else {
-      serversEl.innerHTML = myServers.map(s => `
-        <div onclick="openServerView(${s.id})" style="
-          display:flex;flex-direction:column;align-items:center;gap:8px;
-          cursor:pointer;padding:16px 20px;border-radius:12px;
-          background:var(--bg-sidebar);border:1px solid #f0649c12;
-          transition:background .15s;min-width:100px;text-align:center;
-        " onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='var(--bg-sidebar)'">
-          <div style="
-            width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#f0649c,#c83070);
-            display:flex;align-items:center;justify-content:center;
-            font-size:18px;font-weight:900;color:#fff;
-          ">${s.name.charAt(0).toUpperCase()}</div>
+    if (serversEl) {
+      if (myServers.length === 0) {
+        serversEl.innerHTML = `<div style="color:var(--text-dim);font-size:13px;">You haven't joined any servers yet.</div>`;
+      } else {
+        serversEl.innerHTML = myServers.map(s => `
+          <div onclick="openServerView(${s.id})" style="
+            display:flex;flex-direction:column;align-items:center;gap:8px;
+            cursor:pointer;padding:16px 20px;border-radius:12px;
+            background:var(--bg-sidebar);border:1px solid #f0649c12;
+            transition:background .15s;min-width:100px;text-align:center;
+          " onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='var(--bg-sidebar)'">
+            <div style="
+              width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#f0649c,#c83070);
+              display:flex;align-items:center;justify-content:center;
+              font-size:18px;font-weight:900;color:#fff;
+            ">${s.name.charAt(0).toUpperCase()}</div>
           <span style="font-size:13px;color:var(--text-muted);font-weight:600;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(s.name)}</span>
         </div>
-      `).join('');
+        `).join('');
+      }
     }
   }
 
