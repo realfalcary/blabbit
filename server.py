@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session, jsonify, make_response
+from flask import Flask, render_template, request, session, jsonify, make_response, send_from_directory
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from datetime import datetime, date, timedelta
 import sqlite3
@@ -7,15 +7,13 @@ import secrets
 import os
 import sys
 
-from flask import send_from_directory
+app = Flask(__name__)
 
 @app.route('/sw.js')
 def service_worker():
     response = send_from_directory('static', 'sw.js')
     response.headers['Content-Type'] = 'application/javascript'
     return response
-
-app = Flask(__name__)
 
 def get_data_dir():
     # Check for explicit env var first (set this in Railway to /data)
