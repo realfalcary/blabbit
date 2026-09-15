@@ -1212,8 +1212,12 @@
       width:52px;height:52px;border-radius:50%;background:var(--accent);border:none;
       display:flex;align-items:center;justify-content:center;cursor:pointer;
       flex-shrink:0;transition:border-radius .2s,box-shadow .2s;
-      box-shadow:0 0 10px var(--accent-glow);overflow:hidden;padding:4px;
-    "><img src="/static/favicon.png" style="width:100%;height:100%;object-fit:contain;filter:brightness(10);"/></button>
+      box-shadow:0 0 10px var(--accent-glow);overflow:hidden;padding:4px;color:#fff;
+    ">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 9.5V19a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1V9.5"/>
+      </svg>
+    </button>
 
     <!-- Friends button -->
     <button id="friends-rail-btn" title="Friends" onclick="showFriendsPage()" style="
@@ -1318,11 +1322,26 @@
 
   <div id="main">
     <!-- HOME PAGE -->
-    <div id="home-page" style="display:none;flex:1;overflow-y:auto;padding:40px;position:relative;">
+    <div id="home-page" style="display:none;flex:1;overflow:hidden;padding:40px;position:relative;">
       <canvas id="home-bg-canvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
       <div style="max-width:700px;margin:0 auto;position:relative;z-index:1;">
         <h2 style="font-family:var(--font-display);font-size:26px;font-weight:900;margin-bottom:6px;">Welcome back!</h2>
         <p style="color:var(--text-muted);font-size:14px;margin-bottom:24px;">Here's what's happening with your friends.</p>
+
+        <!-- Online friends -->
+        <div style="margin-bottom:32px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px;">Online Friends</div>
+          <div id="home-online-friends" style="display:flex;flex-wrap:wrap;gap:10px;">
+            <div style="color:var(--text-dim);font-size:13px;">No friends online right now.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FRIENDS PAGE -->
+    <div id="friends-page" style="display:none;flex:1;overflow-y:auto;padding:40px;position:relative;">
+      <div style="max-width:700px;margin:0 auto;position:relative;z-index:1;">
+        <h2 style="font-family:var(--font-display);font-size:26px;font-weight:900;margin-bottom:20px;">Friends</h2>
 
         <!-- Friend search -->
         <div style="margin-bottom:28px;">
@@ -1340,29 +1359,6 @@
           </div>
           <div id="friend-search-msg" style="font-size:12px;color:var(--text-dim);margin-top:6px;min-height:16px;"></div>
         </div>
-
-        <!-- Online friends -->
-        <div style="margin-bottom:32px;">
-          <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px;">Online Friends</div>
-          <div id="home-online-friends" style="display:flex;flex-wrap:wrap;gap:10px;">
-            <div style="color:var(--text-dim);font-size:13px;">No friends online right now.</div>
-          </div>
-        </div>
-
-        <!-- DM recents -->
-        <div style="margin-bottom:32px;">
-          <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px;">Direct Messages</div>
-          <div id="home-dm-list" style="display:flex;flex-direction:column;gap:4px;">
-            <div style="color:var(--text-dim);font-size:13px;">No recent conversations.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- FRIENDS PAGE -->
-    <div id="friends-page" style="display:none;flex:1;overflow-y:auto;padding:40px;position:relative;">
-      <div style="max-width:700px;margin:0 auto;position:relative;z-index:1;">
-        <h2 style="font-family:var(--font-display);font-size:26px;font-weight:900;margin-bottom:20px;">Friends</h2>
 
         <div id="friends-page-tabs">
           <button class="fp-tab active" data-tab="all" onclick="setFriendsPageTab('all')">All Friends</button>
@@ -2517,29 +2513,6 @@ async function saveStatus() {
         " onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='var(--bg-sidebar)'">
           <div style="width:44px;height:44px;border-radius:50%;position:relative;overflow:hidden;">${avHtml}</div>
           <span style="font-size:12px;color:var(--text-muted);font-weight:500;">${escHtml(u)}</span>
-        </div>`;
-      }).join('');
-    }
-
-    // DM list
-    const dmEl = document.getElementById('home-dm-list');
-    if (friends.length === 0) {
-      dmEl.innerHTML = `<div style="color:var(--text-dim);font-size:13px;">No recent conversations.</div>`;
-    } else {
-      dmEl.innerHTML = friends.map(u => {
-        const url = avatarCache[u] || null;
-        const avHtml = url
-          ? `<img src="${url}" alt="${escHtml(u)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"/>`
-          : `<div style="width:100%;height:100%;border-radius:50%;background:${avatarColor(u)};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;">${u.charAt(0).toUpperCase()}</div>`;
-        const isOnline = onlineUsers.includes(u);
-        return `<div onclick="openDM('${escHtml(u)}')" style="
-          display:flex;align-items:center;gap:10px;padding:8px 12px;
-          border-radius:10px;cursor:pointer;background:var(--bg-sidebar);
-          border:1px solid #f0649c12;transition:background .15s;
-        " onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='var(--bg-sidebar)'">
-          <div style="width:36px;height:36px;border-radius:50%;position:relative;overflow:hidden;flex-shrink:0;">${avHtml}</div>
-          <span style="font-size:14px;color:var(--text);font-weight:500;">${escHtml(u)}</span>
-          ${isOnline ? `<div style="width:8px;height:8px;border-radius:50%;background:#3ddc97;margin-left:auto;"></div>` : ''}
         </div>`;
       }).join('');
     }
